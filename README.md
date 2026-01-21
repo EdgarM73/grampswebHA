@@ -17,7 +17,7 @@ Diese Custom Integration ermöglicht es, Daten von einer Gramps Web Instanz in H
 1. Öffnen Sie HACS in Home Assistant
 2. Klicken Sie auf die drei Punkte (⋮) oben rechts
 3. Wählen Sie **Benutzerdefinierte Repositorys**
-4. Fügen Sie die Repository-URL hinzu: `http://172.23.5.140:3000/erdal/gramps-ha-addon`
+4. Fügen Sie die Repository-URL hinzu: `https://github.com/EdgarM73/gramps-ha`
 5. Wählen Sie Kategorie: **Integration**
 6. Klicken Sie auf **Hinzufügen**
 7. Suchen Sie nach "Gramps HA" und installieren Sie es
@@ -25,10 +25,19 @@ Diese Custom Integration ermöglicht es, Daten von einer Gramps Web Instanz in H
 
 ### Manuelle Installation
 
-1. Laden Sie die neueste Version von Gitea herunter
-2. Erstellen Sie einen Ordner `gramps-ha` in Ihrem `<config>/custom_components/` Verzeichnis
-3. Kopieren Sie alle `.py` Dateien, `manifest.json`, `strings.json` und den `translations` Ordner in diesen Ordner
+1. Laden Sie die neueste Version von [GitHub](https://github.com/EdgarM73/gramps-ha/releases) herunter
+2. Entpacken Sie das Archiv
+3. Kopieren Sie den Ordner `custom_components/gramps_ha` in Ihr `<config>/custom_components/` Verzeichnis
 4. Starten Sie Home Assistant neu
+
+#### Oder via Git:
+
+```bash
+cd /config/custom_components
+git clone https://github.com/EdgarM73/gramps-ha.git temp
+mv temp/custom_components/gramps_ha ./
+rm -rf temp
+```
 
 ## Konfiguration
 
@@ -46,11 +55,11 @@ Die Integration erstellt folgende Sensoren:
 
 ### Einzelne Geburtstags-Sensoren
 
-- `sensor.next_birthday_1` - Der nächste Geburtstag
-- `sensor.next_birthday_2` - Der zweitnächste Geburtstag
-- `sensor.next_birthday_3` - Der drittnächste Geburtstag
-- `sensor.next_birthday_4` - Der viertnächste Geburtstag
-- `sensor.next_birthday_5` - Der fünftnächste Geburtstag
+- `sensor.gramps_ha_next_birthday_1` - Der nächste Geburtstag
+- `sensor.gramps_ha_next_birthday_2` - Der zweitnächste Geburtstag
+- `sensor.gramps_ha_next_birthday_3` - Der drittnächste Geburtstag
+- `sensor.gramps_ha_next_birthday_4` - Der viertnächste Geburtstag
+- `sensor.gramps_ha_next_birthday_5` - Der fünftnächste Geburtstag
 
 Jeder Sensor enthält folgende Attribute:
 - `person_name`: Name der Person
@@ -61,7 +70,7 @@ Jeder Sensor enthält folgende Attribute:
 
 ### Alle Geburtstage Sensor
 
-- `sensor.all_upcoming_birthdays` - Enthält eine Liste aller anstehenden Geburtstage
+- `sensor.gramps_ha_all_upcoming_birthdays` - Enthält eine Liste aller anstehenden Geburtstage
 
 ## Dashboard Konfiguration
 

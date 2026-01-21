@@ -111,6 +111,17 @@ class GrampsWebAPI:
                 if sample.get("event_ref_list"):
                     _LOGGER.debug("Sample first event: %s", sample.get("event_ref_list")[0])
             
+            # Search for specific person: Erdal Akkaya
+            for p in people_data:
+                pname = self._get_person_name(p)
+                if "erdal" in pname.lower() and "akkaya" in pname.lower():
+                    _LOGGER.info("Found Erdal Akkaya:")
+                    _LOGGER.info("  Full data: %s", p)
+                    _LOGGER.info("  birth_ref_index: %s", p.get("birth_ref_index"))
+                    _LOGGER.info("  death_ref_index: %s", p.get("death_ref_index"))
+                    _LOGGER.info("  event_ref_list: %s", p.get("event_ref_list"))
+                    break
+            
             for person in people_data:
                 # Get birth event
                 birth_date = self._extract_birth_date(person)

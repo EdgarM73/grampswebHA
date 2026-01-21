@@ -7,12 +7,11 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD
 from .grampsweb_api import GrampsWebAPI
 
 _LOGGER = logging.getLogger(__name__)
@@ -58,8 +57,8 @@ class GrampsWebConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
+            except Exception as err:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception: %s", err)
                 errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(title=info["title"], data=user_input)

@@ -19,12 +19,14 @@ SCAN_INTERVAL = timedelta(hours=6)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Gramps Web from a config entry."""
+    from .const import CONF_URL, CONF_USERNAME, CONF_PASSWORD
+    
     hass.data.setdefault(DOMAIN, {})
     
     api = GrampsWebAPI(
-        url=entry.data["url"],
-        username=entry.data.get("username"),
-        password=entry.data.get("password"),
+        url=entry.data[CONF_URL],
+        username=entry.data.get(CONF_USERNAME),
+        password=entry.data.get(CONF_PASSWORD),
     )
     
     coordinator = GrampsWebCoordinator(hass, api)

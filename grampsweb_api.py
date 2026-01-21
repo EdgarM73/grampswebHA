@@ -20,7 +20,7 @@ class GrampsWebAPI:
     def _authenticate(self):
         """Authenticate with the Gramps Web API."""
         if not self.username or not self.password:
-            return
+            return True
         
         try:
             response = self._session.post(
@@ -29,6 +29,7 @@ class GrampsWebAPI:
                     "username": self.username,
                     "password": self.password,
                 },
+                timeout=10,
             )
             response.raise_for_status()
             data = response.json()
@@ -38,9 +39,10 @@ class GrampsWebAPI:
                 self._session.headers.update({
                     "Authorization": f"Bearer {self.token}"
                 })
+            return True
         except Exception as err:
-            _LOGGER.error("Failed to authenticate with Gramps Web: %s", err)
-            raise
+            _LOGGER.warning("Failed to authenticate with Gramps Web: %s", err)
+            return False
 
     def _get(self, endpoint: str, params: dict = None):
         """Make a GET request to the API."""

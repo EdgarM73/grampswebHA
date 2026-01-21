@@ -1,0 +1,26 @@
+"""Translations for Gramps Web integration."""
+
+TRANSLATIONS = {
+    "de": {
+        "config": {
+            "step": {
+                "user": {
+                    "title": "Gramps Web einrichten",
+                    "description": "Verbinden Sie sich mit Ihrer Gramps Web Instanz",
+                    "data": {
+                        "url": "URL",
+                        "username": "Benutzername (optional)",
+                        "password": "Passwort (optional)",
+                    },
+                }
+            },
+            "error": {
+                "cannot_connect": "Verbindung fehlgeschlagen. Bitte überprüfen Sie die URL und Anmeldedaten.",
+                "unknown": "Ein unbekannter Fehler ist aufgetreten",
+            },
+            "abort": {
+                "already_configured": "Diese Gramps Web Instanz ist bereits konfiguriert"
+            },
+        }
+    }
+}

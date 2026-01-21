@@ -1,0 +1,9 @@
+{
+  "name": "Gramps Web",
+  "content_in_root": false,
+  "filename": "grampsweb",
+  "country": ["DE", "AT", "CH"],
+  "render_readme": true,
+  "homeassistant": "2023.1.0",
+  "iot_class": "Cloud Polling"
+}

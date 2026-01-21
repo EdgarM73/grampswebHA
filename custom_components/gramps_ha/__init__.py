@@ -18,27 +18,45 @@ SCAN_INTERVAL = timedelta(hours=6)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Gramps HA from a config entry."""
+    _LOGGER.info("Setting up Gramps HA integration")
+    
     try:
         from .grampsweb_api import GrampsWebAPI
         
         hass.data.setdefault(DOMAIN, {})
         
+        url = entry.data.get(CONF_URL)
+        username = entry.data.get(CONF_USERNAME)
+        password = entry.data.get(CONF_PASSWORD)
+        
+        _LOGGER.debug("Gramps Web URL: %s", url)
+        _LOGGER.debug("Username provided: %s", bool(username))
+        
         api = GrampsWebAPI(
-            url=entry.data.get(CONF_URL),
-            username=entry.data.get(CONF_USERNAME),
-            password=entry.data.get(CONF_PASSWORD),
+            url=url,
+            username=username,
+            password=password,
         )
         
         coordinator = GrampsWebCoordinator(hass, api)
-        await coordinator.async_config_entry_first_refresh()
+        
+        # Try initial refresh, but don't fail if it doesn't work
+        try:
+            await coordinator.async_config_entry_first_refresh()
+            _LOGGER.info("Initial data fetch successful")
+        except Exception as refresh_err:
+            _LOGGER.warning("Initial data fetch failed (will retry): %s", refresh_err)
+            # Don't fail setup, just log the warning
         
         hass.data[DOMAIN][entry.entry_id] = coordinator
         
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         
+        _LOGGER.info("Gramps HA setup completed successfully")
         return True
+        
     except Exception as err:
-        _LOGGER.error("Failed to setup Gramps HA: %s", err)
+        _LOGGER.error("Failed to setup Gramps HA: %s", err, exc_info=True)
         return False
 
 
@@ -70,6 +88,10 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from API."""
         try:
-            return await self.hass.async_add_executor_job(self.api.get_birthdays)
+            _LOGGER.debug("Fetching birthday data from Gramps Web")
+            data = await self.hass.async_add_executor_job(self.api.get_birthdays)
+            _LOGGER.debug("Fetched %s birthdays", len(data) if data else 0)
+            return data
         except Exception as err:
+            _LOGGER.error("Error fetching data: %s", err, exc_info=True)
             raise UpdateFailed(f"Error communicating with API: {err}") from err

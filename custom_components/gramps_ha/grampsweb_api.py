@@ -9,13 +9,17 @@ _LOGGER = logging.getLogger(__name__)
 class GrampsWebAPI:
     """Class to interact with Gramps Web API."""
 
-    def __init__(self, url: str, username: str = None, password: str = None):
+    def __init__(self, url: str, username: str = None, password: str = None, surname_filter: str = ""):
         """Initialize the API client."""
         self.url = url.rstrip("/")
         self.username = username
         self.password = password
+        self.surname_filter = surname_filter.strip() if surname_filter else ""
         self.token = None
         self._session = requests.Session()
+        
+        if self.surname_filter:
+            _LOGGER.info("Surname filter active: %s", self.surname_filter)
 
     def _authenticate(self):
         """Authenticate with the Gramps Web API."""
@@ -84,14 +88,26 @@ class GrampsWebAPI:
             
             # Get all people
             try:
-                people_data = self.get_people()
-                _LOGGER.info("Fetched %s people from Gramps Web", len(people_data) if isinstance(people_data, list) else "unknown")
+                all_people = self.get_people()
+                _LOGGER.info("Fetched %s people from Gramps Web", len(all_people) if isinstance(all_people, list) else "unknown")
             except Exception as people_err:
                 _LOGGER.error("Failed to fetch people: %s", people_err, exc_info=True)
                 return []
             
-            if not people_data:
+            if not all_people:
                 _LOGGER.warning("No people data returned from Gramps Web")
+                return []
+            
+            # Filter to only include people with a birth date
+            people_data = [
+                person for person in all_people 
+                if self._has_birth_date(person)
+            ]
+            _LOGGER.info("Filtered to %s people with birth dates (from %s total)", 
+                        len(people_data), len(all_people))
+            
+            if not people_data:
+                _LOGGER.warning("No people with birth dates found")
                 return []
             
             birthdays = []
@@ -123,16 +139,24 @@ class GrampsWebAPI:
                     break
             
             for person in people_data:
+                # Get name
+                name = self._get_person_name(person)
+                
+                # Apply surname filter if configured
+                if self.surname_filter:
+                    if self.surname_filter.lower() not in name.lower():
+                        continue
+                
                 # Get birth event
                 birth_date = self._extract_birth_date(person)
                 if not birth_date:
+                    # Should not happen since we pre-filtered, but handle it
                     continue
                 
                 people_with_birth += 1
                 
                 # Check if person is still alive
                 is_alive = self._is_person_alive(person)
-                name = self._get_person_name(person)
                 
                 if is_alive:
                     living_people += 1
@@ -159,6 +183,47 @@ class GrampsWebAPI:
         except Exception as err:
             _LOGGER.error("Failed to fetch birthdays: %s", err, exc_info=True)
             return []
+
+    def _has_birth_date(self, person: dict) -> bool:
+        """Check if person has a birth date set."""
+        try:
+            # Check birth_ref_index
+            birth_ref_index = person.get("birth_ref_index", -1)
+            event_ref_list = person.get("event_ref_list", [])
+            
+            # If birth_ref_index is valid, we have a birth date
+            if birth_ref_index >= 0 and birth_ref_index < len(event_ref_list):
+                return True
+            
+            # Otherwise, check if there's a birth event in the list
+            for event_ref in event_ref_list:
+                event_handle = event_ref.get("ref")
+                if event_handle:
+                    try:
+                        event_data = self._get(f"events/{event_handle}")
+                        event_type = event_data.get("type", {})
+                        
+                        if isinstance(event_type, dict):
+                            type_string = event_type.get("string", "")
+                        else:
+                            type_string = str(event_type)
+                        
+                        if "birth" in type_string.lower():
+                            date_info = event_data.get("date", {})
+                            dateval = date_info.get("dateval", [])
+                            
+                            if dateval and len(dateval) >= 3:
+                                day, month, year, _ = dateval
+                                if year > 0 and month > 0 and day > 0:
+                                    return True
+                    except Exception:
+                        continue
+            
+            return False
+            
+        except Exception as err:
+            _LOGGER.debug("Error checking birth date: %s", err)
+            return False
 
     def _extract_birth_date(self, person: dict):
         """Extract birth date from person data."""

@@ -8,7 +8,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SURNAME_FILTER
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,14 +57,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         url = entry.data.get(CONF_URL)
         username = entry.data.get(CONF_USERNAME)
         password = entry.data.get(CONF_PASSWORD)
+        surname_filter = entry.data.get(CONF_SURNAME_FILTER, "")
         
         _LOGGER.debug("Gramps Web URL: %s", url)
         _LOGGER.debug("Username provided: %s", bool(username))
+        _LOGGER.debug("Surname filter: %s", surname_filter if surname_filter else "None")
         
         api = GrampsWebAPI(
             url=url,
             username=username,
             password=password,
+            surname_filter=surname_filter,
         )
         
         coordinator = GrampsWebCoordinator(hass, api)

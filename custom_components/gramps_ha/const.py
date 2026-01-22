@@ -6,6 +6,7 @@ DEFAULT_NAME = "Gramps HA"
 CONF_URL = "url"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
+CONF_SURNAME_FILTER = "surname_filter"
 
 ATTR_PERSON_NAME = "person_name"
 ATTR_BIRTH_DATE = "birth_date"

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, date
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -31,56 +31,34 @@ async def async_setup_entry(
     """Set up Gramps Web sensors from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     
-    sensors = [
-        GrampsWebNextBirthdaySensor(coordinator, entry, i)
-        for i in range(6)  # Create 6 sensors for next 6 birthdays
-    ]
-    
+    sensors: list[SensorEntity] = []
+    for i in range(6):  # Create sensors for next 6 birthdays
+        sensors.append(GrampsWebNextBirthdayNameSensor(coordinator, entry, i))
+        sensors.append(GrampsWebNextBirthdayAgeSensor(coordinator, entry, i))
+        sensors.append(GrampsWebNextBirthdayDateSensor(coordinator, entry, i))
+
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
     
     async_add_entities(sensors)
 
 
-class GrampsWebNextBirthdaySensor(CoordinatorEntity, SensorEntity):
-    """Representation of a Gramps Web next birthday sensor."""
+class GrampsWebNextBirthdayBase(CoordinatorEntity, SensorEntity):
+    """Base class shared by the per-field next birthday sensors."""
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
-        """Initialize the sensor."""
         super().__init__(coordinator)
         self._index = index
-        self._attr_name = f"Next Birthday {index + 1}"
-        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}"
         self._entry = entry
 
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
+    def _get_birthday(self) -> dict | None:
         if not self.coordinator.data:
             return None
-        
         if self._index >= len(self.coordinator.data):
             return None
-        
-        birthday = self.coordinator.data[self._index]
-        name = birthday.get("person_name", "Unknown")
-        next_birthday = birthday.get("next_birthday")
-        age = birthday.get("age")
-        
-        if next_birthday:
-            try:
-                # Parse ISO date and format as DD.MM.YYYY
-                dt = datetime.fromisoformat(next_birthday)
-                formatted_date = dt.strftime("%d.%m.%Y")
-                age_info = f" ({age} Jahre)" if age else ""
-                return f"{name} - {formatted_date}{age_info}"
-            except Exception:
-                return name
-        
-        return name
+        return self.coordinator.data[self._index]
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return device info for grouping in HA UI."""
         config_url = self._entry.data.get(CONF_URL)
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
@@ -93,15 +71,9 @@ class GrampsWebNextBirthdaySensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes."""
-        if not self.coordinator.data:
+        birthday = self._get_birthday()
+        if not birthday:
             return {}
-        
-        if self._index >= len(self.coordinator.data):
-            return {}
-        
-        birthday = self.coordinator.data[self._index]
-        
         return {
             ATTR_PERSON_NAME: birthday.get("person_name"),
             ATTR_BIRTH_DATE: birthday.get("birth_date"),
@@ -110,10 +82,75 @@ class GrampsWebNextBirthdaySensor(CoordinatorEntity, SensorEntity):
             "next_birthday": birthday.get("next_birthday"),
         }
 
+
+class GrampsWebNextBirthdayNameSensor(GrampsWebNextBirthdayBase):
+    """Next birthday sensor showing only the name."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Birthday {index + 1} Name"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_name"
+
+    @property
+    def native_value(self):
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        return birthday.get("person_name")
+
     @property
     def icon(self):
-        """Return the icon to use in the frontend."""
-        return "mdi:cake-variant"
+        return "mdi:account"
+
+
+class GrampsWebNextBirthdayAgeSensor(GrampsWebNextBirthdayBase):
+    """Next birthday sensor showing only the age."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Birthday {index + 1} Age"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_age"
+
+    @property
+    def native_value(self):
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        return birthday.get("age")
+
+    @property
+    def icon(self):
+        return "mdi:numeric"
+
+
+class GrampsWebNextBirthdayDateSensor(GrampsWebNextBirthdayBase):
+    """Next birthday sensor showing only the date."""
+
+    _attr_device_class = SensorDeviceClass.DATE
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Birthday {index + 1} Date"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_date"
+
+    @property
+    def native_value(self):
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        next_birthday = birthday.get("next_birthday")
+        if not next_birthday:
+            return None
+        try:
+            # Return a date object for proper DATE device class handling
+            dt = datetime.fromisoformat(next_birthday)
+            return dt.date()
+        except Exception:
+            return None
+
+    @property
+    def icon(self):
+        return "mdi:calendar"
 
 
 class GrampsWebAllBirthdaysSensor(CoordinatorEntity, SensorEntity):

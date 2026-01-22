@@ -138,15 +138,15 @@ class GrampsWebNextBirthdayDateSensor(GrampsWebNextBirthdayBase):
         birthday = self._get_birthday()
         if not birthday:
             return None
-        next_birthday = birthday.get("next_birthday")
-        if not next_birthday:
-            return None
-        try:
-            # Return a date object for proper DATE device class handling
-            dt = datetime.fromisoformat(next_birthday)
-            return dt.date()
-        except Exception:
-            return None
+        birth_date = birthday.get("birth_date")
+        # We display the original birth date (not the upcoming birthday)
+        if birth_date:
+            try:
+                dt = datetime.fromisoformat(birth_date)
+                return dt.date()
+            except Exception:
+                return None
+        return None
 
     @property
     def icon(self):

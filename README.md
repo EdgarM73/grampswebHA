@@ -4,9 +4,10 @@ Diese Custom Integration ermöglicht es, Daten von einer Gramps Web Instanz in H
 
 ## Features
 
-- 🎂 Zeigt die nächsten 5 Geburtstage an
+- 🎂 Zeigt die nächsten 6 Geburtstage an
 - 📅 Berechnet automatisch die Tage bis zum nächsten Geburtstag
 - 🎉 Zeigt das Alter der Person am kommenden Geburtstag
+- 🧩 Pro Geburtstag drei Sensoren: Name, Alter, Datum
 - 🔄 Automatische Aktualisierung alle 6 Stunden
 - 🔐 Unterstützt authentifizierte und öffentliche Gramps Web Instanzen
 
@@ -48,91 +49,53 @@ rm -rf temp
    - **URL**: Die URL Ihrer Gramps Web Instanz (z.B. `https://meine-gramps.example.com`)
    - **Benutzername**: (optional) Ihr Gramps Web Benutzername
    - **Passwort**: (optional) Ihr Gramps Web Passwort
+  - **Nachname-Filter**: (optional) Nur Personen mit diesem Nachnamen anzeigen
 
 ## Sensoren
 
 Die Integration erstellt folgende Sensoren:
 
-### Einzelne Geburtstags-Sensoren
+### Nächste Geburtstage (jeweils Name/Alter/Datum)
 
-- `sensor.gramps_ha_next_birthday_1` - Der nächste Geburtstag
-- `sensor.gramps_ha_next_birthday_2` - Der zweitnächste Geburtstag
-- `sensor.gramps_ha_next_birthday_3` - Der drittnächste Geburtstag
-- `sensor.gramps_ha_next_birthday_4` - Der viertnächste Geburtstag
-- `sensor.gramps_ha_next_birthday_5` - Der fünftnächste Geburtstag
+Für die nächsten 6 Geburtstage werden je drei Sensoren angelegt:
 
-Jeder Sensor enthält folgende Attribute:
+- `sensor.next_birthday_1_name`, `sensor.next_birthday_1_age`, `sensor.next_birthday_1_date`
+- `sensor.next_birthday_2_name`, `sensor.next_birthday_2_age`, `sensor.next_birthday_2_date`
+- `sensor.next_birthday_3_name`, `sensor.next_birthday_3_age`, `sensor.next_birthday_3_date`
+- `sensor.next_birthday_4_name`, `sensor.next_birthday_4_age`, `sensor.next_birthday_4_date`
+- `sensor.next_birthday_5_name`, `sensor.next_birthday_5_age`, `sensor.next_birthday_5_date`
+- `sensor.next_birthday_6_name`, `sensor.next_birthday_6_age`, `sensor.next_birthday_6_date`
+
+Hinweis: Die Sensor-IDs können je nach System leicht variieren. Prüfen Sie die exakten Entitäten unter Einstellungen → Geräte & Dienste → Entitäten.
+
+Alle diese Sensoren enthalten Attribute mit Zusatzinformationen:
 - `person_name`: Name der Person
 - `birth_date`: Geburtsdatum
 - `age`: Alter am kommenden Geburtstag
 - `days_until`: Tage bis zum Geburtstag
-- `next_birthday`: Datum des nächsten Geburtstags
+- `next_birthday`: Datum des nächsten Geburtstags (ISO)
 
-### Alle Geburtstage Sensor
+Zusätzlich wird ein aggregierter Sensor bereitgestellt:
 
-- `sensor.gramps_ha_all_upcoming_birthdays` - Enthält eine Liste aller anstehenden Geburtstage
+- `sensor.all_upcoming_birthdays` – Anzahl/Liste aller anstehenden Geburtstage
 
 ## Dashboard Konfiguration
 
-### Entities Card
-
-```yaml
-type: entities
-title: Nächste Geburtstage
-entities:
-  - entity: sensor.next_birthday_1
-    secondary_info: attribute
-    attribute: days_until
-    name: 🎂 1. Geburtstag
-  - entity: sensor.next_birthday_2
-    secondary_info: attribute
-    attribute: days_until
-    name: 🎂 2. Geburtstag
-  - entity: sensor.next_birthday_3
-    secondary_info: attribute
-    attribute: days_until
-    name: 🎂 3. Geburtstag
-  - entity: sensor.next_birthday_4
-    secondary_info: attribute
-    attribute: days_until
-    name: 🎂 4. Geburtstag
-  - entity: sensor.next_birthday_5
-    secondary_info: attribute
-    attribute: days_until
-    name: 🎂 5. Geburtstag
-```
-
-### Markdown Card (erweiterte Anzeige)
-
-```yaml
-type: markdown
-content: >
-  ## 🎂 Nächste Geburtstage
-
-  {% for i in range(1, 6) %}
-  {% set sensor = 'sensor.next_birthday_' ~ i %}
-  {% if states(sensor) != 'unknown' and states(sensor) != 'unavailable' %}
-  **{{ states(sensor) }}**  
-  📅 In {{ state_attr(sensor, 'days_until') }} Tagen ({{ state_attr(sensor, 'age') }} Jahre)  
-  {{ state_attr(sensor, 'next_birthday') }}
-  
-  {% endif %}
-  {% endfor %}
-```
+Beispiel-Vorlagen (Grid und Markdown) mit den neuen, getrennten Sensoren finden Sie in [EXAMPLES.md](EXAMPLES.md).
 
 ### Custom Button Card (erfordert custom:button-card)
 
 ```yaml
 type: custom:button-card
-entity: sensor.next_birthday_1
+entity: sensor.next_birthday_1_name
 name: |
   [[[
     return states['sensor.next_birthday_1'].state;
   ]]]
 label: |
   [[[
-    const days = states['sensor.next_birthday_1'].attributes.days_until;
-    const age = states['sensor.next_birthday_1'].attributes.age;
+    const days = states['sensor.next_birthday_1_name'].attributes.days_until;
+    const age = states['sensor.next_birthday_1_name'].attributes.age;
     return `In ${days} Tagen wird ${age} Jahre alt`;
   ]]]
 show_label: true
@@ -141,7 +104,7 @@ styles:
   card:
     - background: |
         [[[
-          const days = states['sensor.next_birthday_1'].attributes.days_until;
+          const days = states['sensor.next_birthday_1_name'].attributes.days_until;
           if (days <= 7) return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
           return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
         ]]]

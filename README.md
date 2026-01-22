@@ -167,3 +167,7 @@ MIT License
 ## Support
 
 Bei Problemen oder Fragen erstellen Sie bitte ein Issue auf GitHub.
+
+---
+
+🇩🇪 Deutsche Version | [🇬🇧 English Version](README_EN.md)

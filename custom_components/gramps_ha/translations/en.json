@@ -32,9 +32,6 @@
       "next_birthday_1_date": {
         "name": "Next Birthday 1 Date"
       },
-      "next_birthday_1_days": {
-        "name": "Next Birthday 1 Days Remaining"
-      },
       "next_birthday_2_name": {
         "name": "Next Birthday 2 Name"
       },
@@ -43,9 +40,6 @@
       },
       "next_birthday_2_date": {
         "name": "Next Birthday 2 Date"
-      },
-      "next_birthday_2_days": {
-        "name": "Next Birthday 2 Days Remaining"
       },
       "next_birthday_3_name": {
         "name": "Next Birthday 3 Name"
@@ -56,9 +50,6 @@
       "next_birthday_3_date": {
         "name": "Next Birthday 3 Date"
       },
-      "next_birthday_3_days": {
-        "name": "Next Birthday 3 Days Remaining"
-      },
       "next_birthday_4_name": {
         "name": "Next Birthday 4 Name"
       },
@@ -67,9 +58,6 @@
       },
       "next_birthday_4_date": {
         "name": "Next Birthday 4 Date"
-      },
-      "next_birthday_4_days": {
-        "name": "Next Birthday 4 Days Remaining"
       },
       "next_birthday_5_name": {
         "name": "Next Birthday 5 Name"
@@ -80,9 +68,6 @@
       "next_birthday_5_date": {
         "name": "Next Birthday 5 Date"
       },
-      "next_birthday_5_days": {
-        "name": "Next Birthday 5 Days Remaining"
-      },
       "next_birthday_6_name": {
         "name": "Next Birthday 6 Name"
       },
@@ -91,9 +76,6 @@
       },
       "next_birthday_6_date": {
         "name": "Next Birthday 6 Date"
-      },
-      "next_birthday_6_days": {
-        "name": "Next Birthday 6 Days Remaining"
       },
       "all_upcoming_birthdays": {
         "name": "All Upcoming Birthdays"

@@ -1,4 +1,5 @@
 """Sensor platform for Gramps Web integration."""
+
 from __future__ import annotations
 
 import logging
@@ -30,16 +31,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up Gramps Web sensors from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     sensors: list[SensorEntity] = []
     for i in range(6):  # Create sensors for next 6 birthdays
         sensors.append(GrampsWebNextBirthdayNameSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayAgeSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayDateSensor(coordinator, entry, i))
-        sensors.append(GrampsWebNextBirthdayDaysRemainingSensor(coordinator, entry, i))
+        sensors.append(GrampsWebNextBirthdayDaysUntilSensor(coordinator, entry, i))
+        sensors.append(GrampsWebNextBirthdayImageSensor(coordinator, entry, i))
 
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
-    
+
     async_add_entities(sensors)
 
 
@@ -81,7 +83,16 @@ class GrampsWebNextBirthdayBase(CoordinatorEntity, SensorEntity):
             ATTR_AGE: birthday.get("age"),
             ATTR_DAYS_UNTIL: birthday.get("days_until"),
             "next_birthday": birthday.get("next_birthday"),
+            "image_url": birthday.get("image_url"),
         }
+
+    @property
+    def entity_picture(self):
+        """Return entity picture from Gramps if available."""
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        return birthday.get("image_url")
 
 
 class GrampsWebNextBirthdayNameSensor(GrampsWebNextBirthdayBase):
@@ -154,14 +165,14 @@ class GrampsWebNextBirthdayDateSensor(GrampsWebNextBirthdayBase):
         return "mdi:calendar"
 
 
-class GrampsWebNextBirthdayDaysRemainingSensor(GrampsWebNextBirthdayBase):
+class GrampsWebNextBirthdayDaysUntilSensor(GrampsWebNextBirthdayBase):
     """Next birthday sensor showing days until birthday."""
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
-        self._attr_name = f"Next Birthday {index + 1} Days Remaining"
-        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_days"
-        self._attr_unit_of_measurement = "days"
+        self._attr_name = f"Next Birthday {index + 1} Days Until"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_days_until"
+        self._attr_native_unit_of_measurement = "days"
 
     @property
     def native_value(self):
@@ -173,6 +184,34 @@ class GrampsWebNextBirthdayDaysRemainingSensor(GrampsWebNextBirthdayBase):
     @property
     def icon(self):
         return "mdi:calendar-clock"
+
+
+class GrampsWebNextBirthdayImageSensor(GrampsWebNextBirthdayBase):
+    """Next birthday sensor showing image URL."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Birthday {index + 1} Image"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_image"
+
+    @property
+    def native_value(self):
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        return birthday.get("image_url", "No Image")
+
+    @property
+    def icon(self):
+        return "mdi:image-outline"
+
+    @property
+    def entity_picture(self):
+        """Return entity picture from Gramps if available."""
+        birthday = self._get_birthday()
+        if not birthday:
+            return None
+        return birthday.get("image_url")
 
 
 class GrampsWebAllBirthdaysSensor(CoordinatorEntity, SensorEntity):
@@ -190,7 +229,7 @@ class GrampsWebAllBirthdaysSensor(CoordinatorEntity, SensorEntity):
         """Return the state of the sensor."""
         if not self.coordinator.data:
             return 0
-        
+
         return len(self.coordinator.data)
 
     @property
@@ -198,7 +237,7 @@ class GrampsWebAllBirthdaysSensor(CoordinatorEntity, SensorEntity):
         """Return the state attributes."""
         if not self.coordinator.data:
             return {"birthdays": []}
-        
+
         return {
             "birthdays": self.coordinator.data,
         }

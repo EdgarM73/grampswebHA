@@ -15,7 +15,7 @@ from homeassistant.helpers.device_registry import (
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.components import persistent_notification
 
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SURNAME_FILTER
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,13 +36,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         url = entry.data.get(CONF_URL)
         username = entry.data.get(CONF_USERNAME)
         password = entry.data.get(CONF_PASSWORD)
-        surname_filter = entry.data.get(CONF_SURNAME_FILTER, "")
 
         _LOGGER.debug("Gramps Web URL: %s", url)
         _LOGGER.debug("Username provided: %s", bool(username))
-        _LOGGER.debug(
-            "Surname filter: %s", surname_filter if surname_filter else "None"
-        )
 
         # Register device in device registry
         device_registry = async_get_device_registry(hass)
@@ -61,7 +57,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             url=url,
             username=username,
             password=password,
-            surname_filter=surname_filter,
             hass_config_path=hass.config.config_dir,
         )
 

@@ -17,14 +17,12 @@ class GrampsWebAPI:
         url: str,
         username: str = None,
         password: str = None,
-        surname_filter: str = "",
         hass_config_path: str = None,
     ):
         """Initialize the API client."""
         self.url = url.rstrip("/")
         self.username = username
         self.password = password
-        self.surname_filter = surname_filter.strip() if surname_filter else ""
         self.token = None
         self._session = requests.Session()
         self.hass_config_path = hass_config_path
@@ -33,9 +31,6 @@ class GrampsWebAPI:
         if self.hass_config_path:
             self.images_dir = os.path.join(self.hass_config_path, "www", "gramps")
             os.makedirs(self.images_dir, exist_ok=True)
-
-        if self.surname_filter:
-            _LOGGER.info("Surname filter active: %s", self.surname_filter)
 
     def _authenticate(self):
         """Authenticate with the Gramps Web API."""
@@ -292,11 +287,6 @@ class GrampsWebAPI:
             for person in people_data:
                 # Get name
                 name = self._get_person_name(person)
-
-                # Apply surname filter if configured
-                if self.surname_filter:
-                    if self.surname_filter.lower() not in name.lower():
-                        continue
 
                 # Get birth event
                 birth_date = self._extract_birth_date(person)

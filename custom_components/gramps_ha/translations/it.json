@@ -8,7 +8,7 @@
           "url": "URL",
           "username": "Nome utente (opzionale)",
           "password": "Password (opzionale)",
-          "surname_filter": "Filtro per cognome (opzionale)",
+
           "num_birthdays": "Numero di compleanni (opzionale)",
           "show_deathdays": "Mostra date di morte/commemorazione",
           "show_anniversaries": "Mostra anniversari di matrimonio"

@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SURNAME_FILTER, CONF_NUM_BIRTHDAYS, DEFAULT_NUM_BIRTHDAYS, CONF_SHOW_DEATHDAYS, CONF_SHOW_ANNIVERSARIES, DEFAULT_SHOW_DEATHDAYS, DEFAULT_SHOW_ANNIVERSARIES
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_NUM_BIRTHDAYS, DEFAULT_NUM_BIRTHDAYS, CONF_SHOW_DEATHDAYS, CONF_SHOW_ANNIVERSARIES, DEFAULT_SHOW_DEATHDAYS, DEFAULT_SHOW_ANNIVERSARIES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,7 +20,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_URL): cv.string,
         vol.Optional(CONF_USERNAME): cv.string,
         vol.Optional(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_SURNAME_FILTER): cv.string,
         vol.Optional(CONF_NUM_BIRTHDAYS, default=DEFAULT_NUM_BIRTHDAYS): cv.positive_int,
         vol.Optional(CONF_SHOW_DEATHDAYS, default=DEFAULT_SHOW_DEATHDAYS): cv.boolean,
         vol.Optional(CONF_SHOW_ANNIVERSARIES, default=DEFAULT_SHOW_ANNIVERSARIES): cv.boolean,

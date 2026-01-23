@@ -64,7 +64,6 @@ rm -rf temp
    - **URL**: The URL of your Gramps Web instance (e.g., `https://my-gramps.example.com`)
    - **Username**: (optional) Your Gramps Web username
    - **Password**: (optional) Your Gramps Web password
-   - **Surname Filter**: (optional) Only display people with this surname
    - **Number of Birthdays**: (optional, default: 6) How many birthdays to display
    - **Show Deathdays**: (optional, default: No) Show upcoming memorial/death dates
    - **Show Anniversaries**: (optional, default: No) Show upcoming wedding anniversaries

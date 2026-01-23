@@ -59,7 +59,6 @@ rm -rf temp
    - **URL**: Die URL Ihrer Gramps Web Instanz (z.B. `https://meine-gramps.example.com`)
    - **Benutzername**: (optional) Ihr Gramps Web Benutzername
    - **Passwort**: (optional) Ihr Gramps Web Passwort
-   - **Nachname-Filter**: (optional) Nur Personen mit diesem Nachnamen anzeigen
    - **Anzahl Geburtstage**: (optional, Standard: 6) Wie viele Geburtstage sollen angezeigt werden
    - **Gedenktage anzeigen**: (optional, Standard: Nein) Zeigt die nächsten Todestage/Gedenktage an
    - **Hochzeitstage anzeigen**: (optional, Standard: Nein) Zeigt die nächsten Hochzeitstage/Jahrestage an

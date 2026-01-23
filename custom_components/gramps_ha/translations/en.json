@@ -8,7 +8,6 @@
           "url": "URL",
           "username": "Username (optional)",
           "password": "Password (optional)",
-          "surname_filter": "Surname Filter (optional)",
           "num_birthdays": "Number of Birthdays (optional)",
           "show_deathdays": "Show Deathdays/Memorial Dates",
           "show_anniversaries": "Show Anniversaries"

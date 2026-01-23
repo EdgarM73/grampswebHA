@@ -8,7 +8,11 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_SURNAME_FILTER = "surname_filter"
 CONF_NUM_BIRTHDAYS = "num_birthdays"
+CONF_SHOW_DEATHDAYS = "show_deathdays"
+CONF_SHOW_ANNIVERSARIES = "show_anniversaries"
 DEFAULT_NUM_BIRTHDAYS = 6
+DEFAULT_SHOW_DEATHDAYS = False
+DEFAULT_SHOW_ANNIVERSARIES = False
 
 ATTR_PERSON_NAME = "person_name"
 ATTR_BIRTH_DATE = "birth_date"

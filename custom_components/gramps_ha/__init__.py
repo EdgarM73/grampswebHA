@@ -65,7 +65,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass_config_path=hass.config.config_dir,
         )
 
-        coordinator = GrampsWebCoordinator(hass, api)
+        coordinator = GrampsWebCoordinator(hass, api, entry)
 
         # Try initial refresh, but don't fail if it doesn't work
         try:
@@ -104,7 +104,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 class GrampsWebCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Gramps Web data."""
 
-    def __init__(self, hass: HomeAssistant, api) -> None:
+    def __init__(self, hass: HomeAssistant, api, entry: ConfigEntry) -> None:
         """Initialize."""
         super().__init__(
             hass,
@@ -113,6 +113,7 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
             update_interval=SCAN_INTERVAL,
         )
         self.api = api
+        self.entry = entry
         self.last_birthdays = []  # Track previous list for comparison
 
     async def _async_update_data(self):
@@ -124,6 +125,16 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
             
             # Check for notifications
             await self._check_notifications(data)
+            
+            # Fetch deathdays if enabled
+            if self.entry.data.get("show_deathdays", False):
+                deathdays = await self.hass.async_add_executor_job(self.api.get_deathdays)
+                self.hass.data.setdefault(f"{DOMAIN}_deathdays", {})[self.entry.entry_id] = deathdays or []
+            
+            # Fetch anniversaries if enabled
+            if self.entry.data.get("show_anniversaries", False):
+                anniversaries = await self.hass.async_add_executor_job(self.api.get_anniversaries)
+                self.hass.data.setdefault(f"{DOMAIN}_anniversaries", {})[self.entry.entry_id] = anniversaries or []
             
             # Store current list for next comparison
             self.last_birthdays = data or []

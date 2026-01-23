@@ -620,3 +620,229 @@ class GrampsWebAPI:
         except Exception as err:
             _LOGGER.debug("Could not calculate birthday for %s: %s", name, err)
             return None
+
+    def get_deathdays(self, limit: int = 50):
+        """Get upcoming deathdays/memorial dates from Gramps Web."""
+        try:
+            _LOGGER.info("Fetching deathdays from Gramps Web API")
+
+            all_people = self.get_people()
+            if not isinstance(all_people, list):
+                _LOGGER.warning("Unexpected response type for people: %s", type(all_people))
+                return []
+
+            deathdays = []
+
+            for person in all_people:
+                self._ensure_person_events(person)
+
+                if self._has_death_date(person):
+                    deathday = self._calculate_next_deathday(person)
+                    if deathday:
+                        deathdays.append(deathday)
+
+            # Sort by days until deathday
+            deathdays.sort(key=lambda x: x.get("days_until", 999))
+
+            # Return limited list
+            return deathdays[:limit]
+
+        except Exception as err:
+            _LOGGER.error("Failed to get deathdays: %s", err, exc_info=True)
+            return []
+
+    def get_anniversaries(self, limit: int = 50):
+        """Get upcoming anniversaries from Gramps Web."""
+        try:
+            _LOGGER.info("Fetching anniversaries from Gramps Web API")
+
+            all_people = self.get_people()
+            if not isinstance(all_people, list):
+                _LOGGER.warning("Unexpected response type for people: %s", type(all_people))
+                return []
+
+            anniversaries = []
+
+            for person in all_people:
+                self._ensure_person_events(person)
+
+                # Look for marriage events
+                marriage_dates = self._get_marriage_dates(person)
+                for spouse_name, marriage_date in marriage_dates:
+                    anniversary = self._calculate_anniversary(person.get("primary_name", {}).get("name_suffix", "?"), spouse_name, marriage_date)
+                    if anniversary:
+                        anniversaries.append(anniversary)
+
+            # Sort by days until anniversary
+            anniversaries.sort(key=lambda x: x.get("days_until", 999))
+
+            # Return limited list
+            return anniversaries[:limit]
+
+        except Exception as err:
+            _LOGGER.error("Failed to get anniversaries: %s", err, exc_info=True)
+            return []
+
+    def _has_death_date(self, person: dict) -> bool:
+        """Check if person has a death date."""
+        try:
+            death_ref_index = person.get("death_ref_index", -1)
+            if death_ref_index < 0:
+                return False
+
+            event_ref_list = person.get("event_ref_list", [])
+            if death_ref_index >= len(event_ref_list):
+                return False
+
+            death_ref = event_ref_list[death_ref_index]
+            handle = death_ref.get("ref") or death_ref.get("handle") or death_ref.get("hlink")
+
+            if not handle:
+                return False
+
+            event = self._get_event(handle)
+            if not event:
+                return False
+
+            dateval = event.get("date", {})
+            return bool(dateval)
+
+        except Exception as err:
+            _LOGGER.debug("Error checking death date: %s", err)
+            return False
+
+    def _get_marriage_dates(self, person: dict) -> list:
+        """Get all marriage dates from a person's events."""
+        marriage_dates = []
+        try:
+            event_ref_list = person.get("event_ref_list", [])
+
+            for event_ref in event_ref_list:
+                event_handle = event_ref.get("ref") or event_ref.get("handle") or event_ref.get("hlink")
+                if not event_handle:
+                    continue
+
+                event = self._get_event(event_handle)
+                if not event:
+                    continue
+
+                if "Marriage" not in event.get("type", ""):
+                    continue
+
+                dateval = event.get("date", {})
+                if not dateval:
+                    continue
+
+                # Try to extract spouse name from family reference
+                families = person.get("family_list", [])
+                for family_ref in families:
+                    family_handle = family_ref.get("ref") or family_ref.get("handle") or family_ref.get("hlink")
+                    if not family_handle:
+                        continue
+
+                    family = self._get_family(family_handle)
+                    if not family:
+                        continue
+
+                    # Get spouse from family
+                    for spouse_ref in family.get("parent_rel_list", []):
+                        spouse_person = self._get(f"people/{spouse_ref.get('ref')}")
+                        if spouse_person:
+                            spouse_name = spouse_person.get("primary_name", {}).get("name_suffix", "?")
+                            marriage_dates.append((spouse_name, dateval))
+
+            return marriage_dates
+
+        except Exception as err:
+            _LOGGER.debug("Error getting marriage dates: %s", err)
+            return []
+
+    def _get_event(self, handle: str):
+        """Get event details from API."""
+        try:
+            return self._get(f"events/{handle}")
+        except Exception:
+            return None
+
+    def _get_family(self, handle: str):
+        """Get family details from API."""
+        try:
+            return self._get(f"families/{handle}")
+        except Exception:
+            return None
+
+    def _calculate_next_deathday(self, person: dict) -> dict | None:
+        """Calculate next deathday for a person."""
+        try:
+            death_ref_index = person.get("death_ref_index", -1)
+            if death_ref_index < 0:
+                return None
+
+            event_ref_list = person.get("event_ref_list", [])
+            if death_ref_index >= len(event_ref_list):
+                return None
+
+            death_ref = event_ref_list[death_ref_index]
+            handle = death_ref.get("ref") or death_ref.get("handle") or death_ref.get("hlink")
+
+            event = self._get_event(handle)
+            if not event:
+                return None
+
+            dateval = event.get("date", {})
+            death_date = self._parse_dateval(dateval)
+
+            if not death_date:
+                return None
+
+            today = date.today()
+            next_deathday = death_date.replace(year=today.year)
+
+            if next_deathday < today:
+                next_deathday = next_deathday.replace(year=today.year + 1)
+
+            days_until = (next_deathday - today).days
+
+            name = person.get("primary_name", {}).get("name_suffix", "Unknown")
+            years_ago = today.year - death_date.year
+
+            return {
+                "person_name": name,
+                "death_date": death_date.isoformat(),
+                "next_deathday": next_deathday.isoformat(),
+                "years_ago": years_ago,
+                "days_until": days_until,
+            }
+
+        except Exception as err:
+            _LOGGER.debug("Could not calculate deathday: %s", err)
+            return None
+
+    def _calculate_anniversary(self, person1_name: str, person2_name: str, dateval: dict) -> dict | None:
+        """Calculate next anniversary for a couple."""
+        try:
+            marriage_date = self._parse_dateval(dateval)
+
+            if not marriage_date:
+                return None
+
+            today = date.today()
+            next_anniversary = marriage_date.replace(year=today.year)
+
+            if next_anniversary < today:
+                next_anniversary = next_anniversary.replace(year=today.year + 1)
+
+            days_until = (next_anniversary - today).days
+            years_together = today.year - marriage_date.year
+
+            return {
+                "person_name": f"{person1_name} & {person2_name}",
+                "marriage_date": marriage_date.isoformat(),
+                "next_anniversary": next_anniversary.isoformat(),
+                "years_together": years_together,
+                "days_until": days_until,
+            }
+
+        except Exception as err:
+            _LOGGER.debug("Could not calculate anniversary: %s", err)
+            return None

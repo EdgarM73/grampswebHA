@@ -18,6 +18,10 @@ And if you already have a family tree, you might as well display family birthday
 - 🔄 Automatic updates every 6 hours
 - 🔐 Supports authenticated and public Gramps Web instances
 - 🌍 Translations: German, English, French, Italian, Bosnian
+- 🔔 Notifications for new upcoming birthdays in the list
+- 🎺 Notifications when someone has a birthday tomorrow
+- 🪦 **Optional: Displays upcoming memorial dates/death anniversaries** (can be enabled in configuration)
+- 💍 **Optional: Displays upcoming wedding anniversaries/marriage dates** (can be enabled in configuration)
 - 👤 Surname filter for targeted display
 - 🔔 Notifications when new birthdays are added to the list
 - 🎺 Notifications when someone has a birthday tomorrow
@@ -62,6 +66,8 @@ rm -rf temp
    - **Password**: (optional) Your Gramps Web password
    - **Surname Filter**: (optional) Only display people with this surname
    - **Number of Birthdays**: (optional, default: 6) How many birthdays to display
+   - **Show Deathdays**: (optional, default: No) Show upcoming memorial/death dates
+   - **Show Anniversaries**: (optional, default: No) Show upcoming wedding anniversaries
 
 ## Sensors
 
@@ -87,6 +93,34 @@ All these sensors contain attributes with additional information:
 - `days_until`: Days until birthday
 - `next_birthday`: Date of next birthday (ISO format)
 - `image_url`: URL to profile picture (if available)
+
+### Next Deathdays/Memorial Dates (optional)
+
+If the "Show Deathdays" option is enabled, four sensors are created for each of the next 6 memorial/death dates:
+
+- `sensor.next_deathday_1_name`, `sensor.next_deathday_1_date`, `sensor.next_deathday_1_years_ago`, `sensor.next_deathday_1_days_until`
+- `sensor.next_deathday_2_name`, `sensor.next_deathday_2_date`, `sensor.next_deathday_2_years_ago`, `sensor.next_deathday_2_days_until`
+- ... up to `sensor.next_deathday_6_*`
+
+These sensors display:
+- **name**: Name of the deceased person
+- **date**: Death date
+- **years_ago**: How many years have passed since death
+- **days_until**: Days until the annual memorial reminder
+
+### Next Wedding Anniversaries (optional)
+
+If the "Show Anniversaries" option is enabled, four sensors are created for each of the next 6 wedding anniversaries:
+
+- `sensor.next_anniversary_1_name`, `sensor.next_anniversary_1_date`, `sensor.next_anniversary_1_years_together`, `sensor.next_anniversary_1_days_until`
+- `sensor.next_anniversary_2_name`, `sensor.next_anniversary_2_date`, `sensor.next_anniversary_2_years_together`, `sensor.next_anniversary_2_days_until`
+- ... up to `sensor.next_anniversary_6_*`
+
+These sensors display:
+- **name**: Names of the spouses
+- **date**: Marriage date
+- **years_together**: How many years the couple has been married
+- **days_until**: Days until the next anniversary
 
 Additionally, an aggregated sensor is provided:
 
@@ -177,11 +211,11 @@ This integration is under active development. Contributions are welcome!
 
 ### Planned Features
 
-- [ ] Configurable number of birthdays
+- [x] Configurable number of birthdays
 - [ ] Age group filtering
-- [ ] Death anniversaries and memorial dates
-- [ ] Wedding anniversaries
-- [ ] Notifications for upcoming birthdays
+- [x] Death anniversaries and memorial dates
+- [x] Wedding anniversaries
+- [x] Notifications for upcoming birthdays
 - [ ] Support for multiple Gramps Web instances
 
 ## License

@@ -9,7 +9,9 @@
           "username": "Username (optional)",
           "password": "Password (optional)",
           "surname_filter": "Surname Filter (optional)",
-          "num_birthdays": "Number of Birthdays (optional)"
+          "num_birthdays": "Number of Birthdays (optional)",
+          "show_deathdays": "Show Deathdays/Memorial Dates",
+          "show_anniversaries": "Show Anniversaries"
         }
       }
     },
@@ -116,7 +118,15 @@
       },
       "all_upcoming_birthdays": {
         "name": "All Upcoming Birthdays"
-      }
+      },
+      "next_deathday_1_name": {"name": "Next Memorial 1 Name"},
+      "next_deathday_1_date": {"name": "Next Memorial 1 Date"},
+      "next_deathday_1_years_ago": {"name": "Next Memorial 1 Years Ago"},
+      "next_deathday_1_days_until": {"name": "Next Memorial 1 Days Until"},
+      "next_anniversary_1_name": {"name": "Next Anniversary 1 Name"},
+      "next_anniversary_1_years_together": {"name": "Next Anniversary 1 Years Together"},
+      "next_anniversary_1_date": {"name": "Next Anniversary 1 Date"},
+      "next_anniversary_1_days_until": {"name": "Next Anniversary 1 Days Until"}
     }
   },
   "notifications": {

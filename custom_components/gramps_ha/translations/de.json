@@ -9,7 +9,9 @@
           "username": "Benutzername (optional)",
           "password": "Passwort (optional)",
           "surname_filter": "Nachname-Filter (optional)",
-          "num_birthdays": "Anzahl Geburtstage (optional)"
+          "num_birthdays": "Anzahl Geburtstage (optional)",
+          "show_deathdays": "Todestage/Gedenktage anzeigen",
+          "show_anniversaries": "Hochzeitstage anzeigen"
         }
       }
     },
@@ -116,7 +118,15 @@
       },
       "all_upcoming_birthdays": {
         "name": "Alle anstehenden Geburtstage"
-      }
+      },
+      "next_deathday_1_name": {"name": "Nächster Gedenktag 1 Name"},
+      "next_deathday_1_date": {"name": "Nächster Gedenktag 1 Datum"},
+      "next_deathday_1_years_ago": {"name": "Nächster Gedenktag 1 Jahre her"},
+      "next_deathday_1_days_until": {"name": "Nächster Gedenktag 1 Tage verbleibend"},
+      "next_anniversary_1_name": {"name": "Nächster Hochzeitstag 1 Namen"},
+      "next_anniversary_1_years_together": {"name": "Nächster Hochzeitstag 1 Jahre zusammen"},
+      "next_anniversary_1_date": {"name": "Nächster Hochzeitstag 1 Datum"},
+      "next_anniversary_1_days_until": {"name": "Nächster Hochzeitstag 1 Tage verbleibend"}
     }
   },
   "notifications": {

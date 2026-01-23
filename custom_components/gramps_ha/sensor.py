@@ -21,6 +21,10 @@ from .const import (
     CONF_URL,
     CONF_NUM_BIRTHDAYS,
     DEFAULT_NUM_BIRTHDAYS,
+    CONF_SHOW_DEATHDAYS,
+    CONF_SHOW_ANNIVERSARIES,
+    DEFAULT_SHOW_DEATHDAYS,
+    DEFAULT_SHOW_ANNIVERSARIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,16 +38,36 @@ async def async_setup_entry(
     """Set up Gramps Web sensors from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     
-    # Get number of birthdays to display from config (default 6)
+    # Get configuration
     num_birthdays = entry.data.get(CONF_NUM_BIRTHDAYS, DEFAULT_NUM_BIRTHDAYS)
+    show_deathdays = entry.data.get(CONF_SHOW_DEATHDAYS, DEFAULT_SHOW_DEATHDAYS)
+    show_anniversaries = entry.data.get(CONF_SHOW_ANNIVERSARIES, DEFAULT_SHOW_ANNIVERSARIES)
 
     sensors: list[SensorEntity] = []
+    
+    # Birthday sensors
     for i in range(num_birthdays):
         sensors.append(GrampsWebNextBirthdayNameSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayAgeSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayDateSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayDaysUntilSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayImageSensor(coordinator, entry, i))
+
+    # Deathday sensors (if enabled)
+    if show_deathdays:
+        for i in range(num_birthdays):
+            sensors.append(GrampsWebNextDeathdayNameSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextDeathdayDateSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextDeathdayYearsAgoSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextDeathdayDaysUntilSensor(coordinator, entry, i))
+
+    # Anniversary sensors (if enabled)
+    if show_anniversaries:
+        for i in range(num_birthdays):
+            sensors.append(GrampsWebNextAnniversaryNameSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextAnniversaryYearsTogetherSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextAnniversaryDateSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextAnniversaryDaysUntilSensor(coordinator, entry, i))
 
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
 
@@ -264,3 +288,201 @@ class GrampsWebAllBirthdaysSensor(CoordinatorEntity, SensorEntity):
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=config_url,
         )
+
+
+class GrampsWebNextDeathdayNameSensor(GrampsWebNextBirthdayBase):
+    """Next deathday sensor showing name."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Name"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_name"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        # Fetch deathday data
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        return deathday_list[self._index].get("person_name")
+
+    @property
+    def icon(self):
+        return "mdi:skull"
+
+
+class GrampsWebNextDeathdayDateSensor(GrampsWebNextBirthdayBase):
+    """Next deathday sensor showing death date."""
+
+    _attr_device_class = SensorDeviceClass.DATE
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Date"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_date"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        death_date = deathday_list[self._index].get("death_date")
+        if death_date:
+            return datetime.fromisoformat(death_date).date()
+        return None
+
+    @property
+    def icon(self):
+        return "mdi:calendar"
+
+
+class GrampsWebNextDeathdayYearsAgoSensor(GrampsWebNextBirthdayBase):
+    """Next deathday sensor showing years ago."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Years Ago"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_years_ago"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        return deathday_list[self._index].get("years_ago")
+
+    @property
+    def icon(self):
+        return "mdi:history"
+
+
+class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextBirthdayBase):
+    """Next deathday sensor showing days until."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Days Until"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_days_until"
+        self._attr_native_unit_of_measurement = "days"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        return deathday_list[self._index].get("days_until")
+
+    @property
+    def icon(self):
+        return "mdi:calendar-clock"
+
+
+class GrampsWebNextAnniversaryNameSensor(GrampsWebNextBirthdayBase):
+    """Next anniversary sensor showing names."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Name"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_name"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("person_name")
+
+    @property
+    def icon(self):
+        return "mdi:heart-multiple"
+
+
+class GrampsWebNextAnniversaryYearsTogetherSensor(GrampsWebNextBirthdayBase):
+    """Next anniversary sensor showing years together."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Years Together"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_years_together"
+        self._attr_native_unit_of_measurement = "years"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("years_together")
+
+    @property
+    def icon(self):
+        return "mdi:numeric"
+
+
+class GrampsWebNextAnniversaryDateSensor(GrampsWebNextBirthdayBase):
+    """Next anniversary sensor showing marriage date."""
+
+    _attr_device_class = SensorDeviceClass.DATE
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Date"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_date"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        marriage_date = anniversary_list[self._index].get("marriage_date")
+        if marriage_date:
+            return datetime.fromisoformat(marriage_date).date()
+        return None
+
+    @property
+    def icon(self):
+        return "mdi:calendar"
+
+
+class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextBirthdayBase):
+    """Next anniversary sensor showing days until."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Days Until"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_days_until"
+        self._attr_native_unit_of_measurement = "days"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("days_until")
+
+    @property
+    def icon(self):
+        return "mdi:calendar-clock"

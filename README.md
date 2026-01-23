@@ -18,6 +18,8 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 - 🔐 Unterstützt authentifizierte und öffentliche Gramps Web Instanzen
 - 🔔 Benachrichtigungen bei neuen Geburtstagen in der Liste
 - 🎺 Benachrichtigungen wenn morgen jemand Geburtstag hat
+- 🪦 **Optional: Zeigt die nächsten Gedenktage/Todestage an** (aktivierbar in der Konfiguration)
+- 💍 **Optional: Zeigt die nächsten Hochzeitstage/Jahrestage an** (aktivierbar in der Konfiguration)
 
 ## Installation
 
@@ -59,6 +61,8 @@ rm -rf temp
    - **Passwort**: (optional) Ihr Gramps Web Passwort
    - **Nachname-Filter**: (optional) Nur Personen mit diesem Nachnamen anzeigen
    - **Anzahl Geburtstage**: (optional, Standard: 6) Wie viele Geburtstage sollen angezeigt werden
+   - **Gedenktage anzeigen**: (optional, Standard: Nein) Zeigt die nächsten Todestage/Gedenktage an
+   - **Hochzeitstage anzeigen**: (optional, Standard: Nein) Zeigt die nächsten Hochzeitstage/Jahrestage an
 
 ## Sensoren
 
@@ -84,6 +88,34 @@ Alle diese Sensoren enthalten Attribute mit Zusatzinformationen:
 - `days_until`: Tage bis zum Geburtstag
 - `next_birthday`: Datum des nächsten Geburtstags (ISO)
 - `image_url`: URL zum Profilbild (falls vorhanden)
+
+### Nächste Gedenktage (optional aktivierbar)
+
+Wenn die Option "Gedenktage anzeigen" aktiviert ist, werden für die nächsten 6 Gedenktage/Todestage je vier Sensoren angelegt:
+
+- `sensor.next_deathday_1_name`, `sensor.next_deathday_1_date`, `sensor.next_deathday_1_years_ago`, `sensor.next_deathday_1_days_until`
+- `sensor.next_deathday_2_name`, `sensor.next_deathday_2_date`, `sensor.next_deathday_2_years_ago`, `sensor.next_deathday_2_days_until`
+- ... bis `sensor.next_deathday_6_*`
+
+Diese Sensoren zeigen:
+- **name**: Name der verstorbenen Person
+- **date**: Todesdatum
+- **years_ago**: Wie viele Jahre sind seit dem Tod vergangen
+- **days_until**: Tage bis zur jährlichen Gedenkerinnerung
+
+### Nächste Hochzeitstage (optional aktivierbar)
+
+Wenn die Option "Hochzeitstage anzeigen" aktiviert ist, werden für die nächsten 6 Hochzeitstage/Jahrestage je vier Sensoren angelegt:
+
+- `sensor.next_anniversary_1_name`, `sensor.next_anniversary_1_date`, `sensor.next_anniversary_1_years_together`, `sensor.next_anniversary_1_days_until`
+- `sensor.next_anniversary_2_name`, `sensor.next_anniversary_2_date`, `sensor.next_anniversary_2_years_together`, `sensor.next_anniversary_2_days_until`
+- ... bis `sensor.next_anniversary_6_*`
+
+Diese Sensoren zeigen:
+- **name**: Namen der Ehepartner
+- **date**: Hochzeitsdatum
+- **years_together**: Wie lange sind die Personen verheiratet
+- **days_until**: Tage bis zum nächsten Jahrestag
 
 Zusätzlich wird ein aggregierter Sensor bereitgestellt:
 
@@ -174,11 +206,11 @@ Diese Integration befindet sich in aktiver Entwicklung. Beiträge sind willkomme
 
 ### Geplante Features
 
-- [ ] Konfigurierbare Anzahl von Geburtstagen
+- [x] Konfigurierbare Anzahl von Geburtstagen
 - [ ] Filterung nach Altersgruppen
-- [ ] Todestage und Gedenktage
-- [ ] Hochzeitstage
-- [ ] Benachrichtigungen für anstehende Geburtstage
+- [x] Todestage und Gedenktage
+- [x] Hochzeitstage
+- [x] Benachrichtigungen für anstehende Geburtstage
 - [ ] Unterstützung für mehrere Gramps Web Instanzen
 
 ## Lizenz

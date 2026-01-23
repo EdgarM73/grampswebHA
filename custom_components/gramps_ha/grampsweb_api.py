@@ -912,12 +912,82 @@ class GrampsWebAPI:
             return False
 
     def _get_marriage_dates(self, person: dict) -> list:
-        """Get all marriage dates from a person's events."""
+        """Get all marriage dates from person and family events."""
         marriage_dates = []
         try:
-            event_ref_list = person.get("event_ref_list", [])
             person_handle = person.get("handle", "")
+            event_ref_list = person.get("event_ref_list", [])
+            families = person.get("family_list", [])
 
+            # Collect possible spouse handles from families
+            spouse_handles = set()
+            for family_ref in families:
+                family_handle = (
+                    family_ref.get("ref")
+                    or family_ref.get("handle")
+                    or family_ref.get("hlink")
+                )
+                if not family_handle:
+                    continue
+
+                family = self._get_family(family_handle)
+                if not family:
+                    continue
+
+                for parent_rel in family.get("parent_rel_list", []):
+                    spouse_handle = parent_rel.get("ref") or parent_rel.get("handle")
+                    if spouse_handle and spouse_handle != person_handle:
+                        spouse_handles.add(spouse_handle)
+
+                # Process marriage events attached to the family
+                for event_ref in family.get("event_ref_list", []):
+                    ev_handle = (
+                        event_ref.get("ref")
+                        or event_ref.get("handle")
+                        or event_ref.get("hlink")
+                    )
+                    if not ev_handle:
+                        continue
+                    event = self._get_event(ev_handle)
+                    if not event:
+                        continue
+
+                    event_type = event.get("type", {})
+                    type_string = (
+                        event_type.get("string", "")
+                        if isinstance(event_type, dict)
+                        else str(event_type)
+                    )
+                    if "marriage" not in type_string.lower():
+                        continue
+
+                    dateval = event.get("date", {})
+                    raw_dateval = None
+                    if isinstance(dateval, dict):
+                        raw_dateval = (
+                            dateval.get("dateval")
+                            or dateval.get("val")
+                            or dateval.get("start")
+                        )
+                    else:
+                        raw_dateval = dateval
+
+                    parsed_dateval = self._parse_dateval(raw_dateval)
+                    if not parsed_dateval:
+                        continue
+
+                    for spouse_handle in spouse_handles or [None]:
+                        spouse_name = "Unknown"
+                        if spouse_handle:
+                            try:
+                                spouse_person = self._get(f"people/{spouse_handle}")
+                                if spouse_person:
+                                    spouse_name = self._get_person_name(spouse_person)
+                            except Exception:
+                                spouse_name = "Unknown"
+                        marriage_dates.append((spouse_name, parsed_dateval))
+
+            # Also process any marriage events directly attached to the person
             for event_ref in event_ref_list:
                 event_handle = (
                     event_ref.get("ref")
@@ -931,7 +1001,6 @@ class GrampsWebAPI:
                 if not event:
                     continue
 
-                # Verify this is a Marriage event
                 event_type = event.get("type", {})
                 type_string = (
                     event_type.get("string", "")
@@ -945,7 +1014,9 @@ class GrampsWebAPI:
                 raw_dateval = None
                 if isinstance(dateval, dict):
                     raw_dateval = (
-                        dateval.get("dateval") or dateval.get("val") or dateval.get("start")
+                        dateval.get("dateval")
+                        or dateval.get("val")
+                        or dateval.get("start")
                     )
                 else:
                     raw_dateval = dateval
@@ -954,35 +1025,19 @@ class GrampsWebAPI:
                 if not parsed_dateval:
                     continue
 
-                # Try to extract spouse name from family reference
-                families = person.get("family_list", [])
-                for family_ref in families:
-                    family_handle = (
-                        family_ref.get("ref")
-                        or family_ref.get("handle")
-                        or family_ref.get("hlink")
-                    )
-                    if not family_handle:
-                        continue
-
-                    family = self._get_family(family_handle)
-                    if not family:
-                        continue
-
-                    # Get spouse from family - other parent in parent_rel_list
-                    for parent_rel in family.get("parent_rel_list", []):
-                        spouse_handle = parent_rel.get("ref") or parent_rel.get(
-                            "handle"
-                        )
-                        if not spouse_handle or spouse_handle == person_handle:
-                            continue
+                # If we know spouses, emit one entry per spouse; otherwise unknown
+                if spouse_handles:
+                    for spouse_handle in spouse_handles:
+                        spouse_name = "Unknown"
                         try:
                             spouse_person = self._get(f"people/{spouse_handle}")
                             if spouse_person:
                                 spouse_name = self._get_person_name(spouse_person)
-                                marriage_dates.append((spouse_name, parsed_dateval))
                         except Exception:
-                            continue
+                            spouse_name = "Unknown"
+                        marriage_dates.append((spouse_name, parsed_dateval))
+                else:
+                    marriage_dates.append(("Unknown", parsed_dateval))
 
             return marriage_dates
 

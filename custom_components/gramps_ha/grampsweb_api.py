@@ -786,10 +786,25 @@ class GrampsWebAPI:
                 return False
 
             dateval = event.get("date", {})
-            parsed = self._parse_dateval(dateval.get("val") if isinstance(dateval, dict) else dateval)
+            raw_dateval = None
+            if isinstance(dateval, dict):
+                raw_dateval = (
+                    dateval.get("dateval")
+                    or dateval.get("val")
+                    or dateval.get("start")
+                )
+            else:
+                raw_dateval = dateval
+
+            parsed = self._parse_dateval(raw_dateval)
             
             if not parsed:
-                _LOGGER.debug("Person %s: could not parse death date from %s", person_name, dateval)
+                _LOGGER.debug(
+                    "Person %s: could not parse death date from %s (raw=%s)",
+                    person_name,
+                    dateval,
+                    raw_dateval,
+                )
                 return False
             
             _LOGGER.debug("Person %s: has death date %s (event type: %s)", person_name, parsed, type_string)
@@ -904,7 +919,17 @@ class GrampsWebAPI:
                 return None
 
             dateval = event.get("date", {})
-            death_date = self._parse_dateval(dateval.get("val") if isinstance(dateval, dict) else dateval)
+            raw_dateval = None
+            if isinstance(dateval, dict):
+                raw_dateval = (
+                    dateval.get("dateval")
+                    or dateval.get("val")
+                    or dateval.get("start")
+                )
+            else:
+                raw_dateval = dateval
+
+            death_date = self._parse_dateval(raw_dateval)
 
             if not death_date:
                 return None

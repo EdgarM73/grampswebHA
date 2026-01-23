@@ -102,8 +102,15 @@ class GrampsWebAPI:
         return handle
 
     def _parse_dateval(self, dateval):
-        """Convert Gramps dateval list into a Python date using safe heuristics."""
+        """Convert Gramps date structures into a Python date using safe heuristics."""
         try:
+            # Accept dict structures: {"val": [year, month, day]} or start/end
+            if isinstance(dateval, dict):
+                if "val" in dateval:
+                    dateval = dateval.get("val")
+                elif "start" in dateval:  # sometimes ranges
+                    dateval = dateval.get("start")
+
             if not isinstance(dateval, (list, tuple)):
                 return None
 
@@ -714,7 +721,8 @@ class GrampsWebAPI:
                 return False
 
             dateval = event.get("date", {})
-            return bool(dateval)
+            parsed = self._parse_dateval(dateval.get("val") if isinstance(dateval, dict) else dateval)
+            return bool(parsed)
 
         except Exception as err:
             _LOGGER.debug("Error checking death date: %s", err)
@@ -740,7 +748,8 @@ class GrampsWebAPI:
                     continue
 
                 dateval = event.get("date", {})
-                if not dateval:
+                parsed_dateval = self._parse_dateval(dateval.get("val") if isinstance(dateval, dict) else dateval)
+                if not parsed_dateval:
                     continue
 
                 # Try to extract spouse name from family reference
@@ -754,19 +763,18 @@ class GrampsWebAPI:
                     if not family:
                         continue
 
-                    # Get spouse from family - look for other parent
-                    for child_rel in family.get("child_rel_list", []):
-                        if child_rel.get("ref") == person_handle:
-                            continue  # Skip self
-                        spouse_handle = child_rel.get("ref") or child_rel.get("handle")
-                        if spouse_handle:
-                            try:
-                                spouse_person = self._get(f"people/{spouse_handle}")
-                                if spouse_person:
-                                    spouse_name = self._get_person_name(spouse_person)
-                                    marriage_dates.append((spouse_name, dateval))
-                            except Exception:
-                                continue
+                    # Get spouse from family - other parent in parent_rel_list
+                    for parent_rel in family.get("parent_rel_list", []):
+                        spouse_handle = parent_rel.get("ref") or parent_rel.get("handle")
+                        if not spouse_handle or spouse_handle == person_handle:
+                            continue
+                        try:
+                            spouse_person = self._get(f"people/{spouse_handle}")
+                            if spouse_person:
+                                spouse_name = self._get_person_name(spouse_person)
+                                marriage_dates.append((spouse_name, parsed_dateval))
+                        except Exception:
+                            continue
 
             return marriage_dates
 
@@ -807,7 +815,7 @@ class GrampsWebAPI:
                 return None
 
             dateval = event.get("date", {})
-            death_date = self._parse_dateval(dateval)
+            death_date = self._parse_dateval(dateval.get("val") if isinstance(dateval, dict) else dateval)
 
             if not death_date:
                 return None

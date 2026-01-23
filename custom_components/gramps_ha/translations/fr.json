@@ -32,6 +32,12 @@
       "next_birthday_1_date": {
         "name": "Prochain anniversaire 1 Date"
       },
+      "next_birthday_1_days_until": {
+        "name": "Prochain anniversaire 1 Jours restants"
+      },
+      "next_birthday_1_image": {
+        "name": "Prochain anniversaire 1 Image"
+      },
       "next_birthday_2_name": {
         "name": "Prochain anniversaire 2 Nom"
       },
@@ -40,6 +46,12 @@
       },
       "next_birthday_2_date": {
         "name": "Prochain anniversaire 2 Date"
+      },
+      "next_birthday_2_days_until": {
+        "name": "Prochain anniversaire 2 Jours restants"
+      },
+      "next_birthday_2_image": {
+        "name": "Prochain anniversaire 2 Image"
       },
       "next_birthday_3_name": {
         "name": "Prochain anniversaire 3 Nom"
@@ -50,6 +62,12 @@
       "next_birthday_3_date": {
         "name": "Prochain anniversaire 3 Date"
       },
+      "next_birthday_3_days_until": {
+        "name": "Prochain anniversaire 3 Jours restants"
+      },
+      "next_birthday_3_image": {
+        "name": "Prochain anniversaire 3 Image"
+      },
       "next_birthday_4_name": {
         "name": "Prochain anniversaire 4 Nom"
       },
@@ -58,6 +76,12 @@
       },
       "next_birthday_4_date": {
         "name": "Prochain anniversaire 4 Date"
+      },
+      "next_birthday_4_days_until": {
+        "name": "Prochain anniversaire 4 Jours restants"
+      },
+      "next_birthday_4_image": {
+        "name": "Prochain anniversaire 4 Image"
       },
       "next_birthday_5_name": {
         "name": "Prochain anniversaire 5 Nom"
@@ -68,6 +92,12 @@
       "next_birthday_5_date": {
         "name": "Prochain anniversaire 5 Date"
       },
+      "next_birthday_5_days_until": {
+        "name": "Prochain anniversaire 5 Jours restants"
+      },
+      "next_birthday_5_image": {
+        "name": "Prochain anniversaire 5 Image"
+      },
       "next_birthday_6_name": {
         "name": "Prochain anniversaire 6 Nom"
       },
@@ -76,6 +106,12 @@
       },
       "next_birthday_6_date": {
         "name": "Prochain anniversaire 6 Date"
+      },
+      "next_birthday_6_days_until": {
+        "name": "Prochain anniversaire 6 Jours restants"
+      },
+      "next_birthday_6_image": {
+        "name": "Prochain anniversaire 6 Image"
       },
       "all_upcoming_birthdays": {
         "name": "Tous les anniversaires à venir"

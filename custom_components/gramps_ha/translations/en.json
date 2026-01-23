@@ -32,6 +32,12 @@
       "next_birthday_1_date": {
         "name": "Next Birthday 1 Date"
       },
+      "next_birthday_1_days_until": {
+        "name": "Next Birthday 1 Days Until"
+      },
+      "next_birthday_1_image": {
+        "name": "Next Birthday 1 Image"
+      },
       "next_birthday_2_name": {
         "name": "Next Birthday 2 Name"
       },
@@ -40,6 +46,12 @@
       },
       "next_birthday_2_date": {
         "name": "Next Birthday 2 Date"
+      },
+      "next_birthday_2_days_until": {
+        "name": "Next Birthday 2 Days Until"
+      },
+      "next_birthday_2_image": {
+        "name": "Next Birthday 2 Image"
       },
       "next_birthday_3_name": {
         "name": "Next Birthday 3 Name"
@@ -50,6 +62,12 @@
       "next_birthday_3_date": {
         "name": "Next Birthday 3 Date"
       },
+      "next_birthday_3_days_until": {
+        "name": "Next Birthday 3 Days Until"
+      },
+      "next_birthday_3_image": {
+        "name": "Next Birthday 3 Image"
+      },
       "next_birthday_4_name": {
         "name": "Next Birthday 4 Name"
       },
@@ -58,6 +76,12 @@
       },
       "next_birthday_4_date": {
         "name": "Next Birthday 4 Date"
+      },
+      "next_birthday_4_days_until": {
+        "name": "Next Birthday 4 Days Until"
+      },
+      "next_birthday_4_image": {
+        "name": "Next Birthday 4 Image"
       },
       "next_birthday_5_name": {
         "name": "Next Birthday 5 Name"
@@ -68,6 +92,12 @@
       "next_birthday_5_date": {
         "name": "Next Birthday 5 Date"
       },
+      "next_birthday_5_days_until": {
+        "name": "Next Birthday 5 Days Until"
+      },
+      "next_birthday_5_image": {
+        "name": "Next Birthday 5 Image"
+      },
       "next_birthday_6_name": {
         "name": "Next Birthday 6 Name"
       },
@@ -76,6 +106,12 @@
       },
       "next_birthday_6_date": {
         "name": "Next Birthday 6 Date"
+      },
+      "next_birthday_6_days_until": {
+        "name": "Next Birthday 6 Days Until"
+      },
+      "next_birthday_6_image": {
+        "name": "Next Birthday 6 Image"
       },
       "all_upcoming_birthdays": {
         "name": "All Upcoming Birthdays"

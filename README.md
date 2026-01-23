@@ -12,7 +12,8 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 - 🎂 Zeigt die nächsten 6 Geburtstage an
 - 📅 Berechnet automatisch die Tage bis zum nächsten Geburtstag
 - 🎉 Zeigt das Alter der Person am kommenden Geburtstag
-- 🧩 Pro Geburtstag vier Sensoren: Name, Alter, Datum, Tage verbleibend
+- 🧩 Pro Geburtstag fünf Sensoren: Name, Alter, Datum, Tage verbleibend, Bild
+- 🖼️ Lädt Profilbilder aus Gramps Web herunter (falls vorhanden)
 - 🔄 Automatische Aktualisierung alle 6 Stunden
 - 🔐 Unterstützt authentifizierte und öffentliche Gramps Web Instanzen
 
@@ -60,16 +61,16 @@ rm -rf temp
 
 Die Integration erstellt folgende Sensoren:
 
-### Nächste Geburtstage (jeweils Name/Alter/Datum/Tage)
+### Nächste Geburtstage (jeweils Name/Alter/Datum/Tage/Bild)
 
-Für die nächsten 6 Geburtstage werden je vier Sensoren angelegt:
+Für die nächsten 6 Geburtstage werden je fünf Sensoren angelegt:
 
-- `sensor.next_birthday_1_name`, `sensor.next_birthday_1_age`, `sensor.next_birthday_1_date`, `sensor.next_birthday_1_days`
-- `sensor.next_birthday_2_name`, `sensor.next_birthday_2_age`, `sensor.next_birthday_2_date`, `sensor.next_birthday_2_days`
-- `sensor.next_birthday_3_name`, `sensor.next_birthday_3_age`, `sensor.next_birthday_3_date`, `sensor.next_birthday_3_days`
-- `sensor.next_birthday_4_name`, `sensor.next_birthday_4_age`, `sensor.next_birthday_4_date`, `sensor.next_birthday_4_days`
-- `sensor.next_birthday_5_name`, `sensor.next_birthday_5_age`, `sensor.next_birthday_5_date`, `sensor.next_birthday_5_days`
-- `sensor.next_birthday_6_name`, `sensor.next_birthday_6_age`, `sensor.next_birthday_6_date`, `sensor.next_birthday_6_days`
+- `sensor.next_birthday_1_name`, `sensor.next_birthday_1_age`, `sensor.next_birthday_1_date`, `sensor.next_birthday_1_days_until`, `sensor.next_birthday_1_image`
+- `sensor.next_birthday_2_name`, `sensor.next_birthday_2_age`, `sensor.next_birthday_2_date`, `sensor.next_birthday_2_days_until`, `sensor.next_birthday_2_image`
+- `sensor.next_birthday_3_name`, `sensor.next_birthday_3_age`, `sensor.next_birthday_3_date`, `sensor.next_birthday_3_days_until`, `sensor.next_birthday_3_image`
+- `sensor.next_birthday_4_name`, `sensor.next_birthday_4_age`, `sensor.next_birthday_4_date`, `sensor.next_birthday_4_days_until`, `sensor.next_birthday_4_image`
+- `sensor.next_birthday_5_name`, `sensor.next_birthday_5_age`, `sensor.next_birthday_5_date`, `sensor.next_birthday_5_days_until`, `sensor.next_birthday_5_image`
+- `sensor.next_birthday_6_name`, `sensor.next_birthday_6_age`, `sensor.next_birthday_6_date`, `sensor.next_birthday_6_days_until`, `sensor.next_birthday_6_image`
 
 Hinweis: Die Sensor-IDs können je nach System leicht variieren. Prüfen Sie die exakten Entitäten unter Einstellungen → Geräte & Dienste → Entitäten.
 
@@ -79,6 +80,7 @@ Alle diese Sensoren enthalten Attribute mit Zusatzinformationen:
 - `age`: Alter am kommenden Geburtstag
 - `days_until`: Tage bis zum Geburtstag
 - `next_birthday`: Datum des nächsten Geburtstags (ISO)
+- `image_url`: URL zum Profilbild (falls vorhanden)
 
 Zusätzlich wird ein aggregierter Sensor bereitgestellt:
 

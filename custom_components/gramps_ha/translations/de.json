@@ -32,6 +32,12 @@
       "next_birthday_1_date": {
         "name": "Nächster Geburtstag 1 Datum"
       },
+      "next_birthday_1_days_until": {
+        "name": "Nächster Geburtstag 1 Tage verbleibend"
+      },
+      "next_birthday_1_image": {
+        "name": "Nächster Geburtstag 1 Bild"
+      },
       "next_birthday_2_name": {
         "name": "Nächster Geburtstag 2 Name"
       },
@@ -40,6 +46,12 @@
       },
       "next_birthday_2_date": {
         "name": "Nächster Geburtstag 2 Datum"
+      },
+      "next_birthday_2_days_until": {
+        "name": "Nächster Geburtstag 2 Tage verbleibend"
+      },
+      "next_birthday_2_image": {
+        "name": "Nächster Geburtstag 2 Bild"
       },
       "next_birthday_3_name": {
         "name": "Nächster Geburtstag 3 Name"
@@ -50,6 +62,12 @@
       "next_birthday_3_date": {
         "name": "Nächster Geburtstag 3 Datum"
       },
+      "next_birthday_3_days_until": {
+        "name": "Nächster Geburtstag 3 Tage verbleibend"
+      },
+      "next_birthday_3_image": {
+        "name": "Nächster Geburtstag 3 Bild"
+      },
       "next_birthday_4_name": {
         "name": "Nächster Geburtstag 4 Name"
       },
@@ -58,6 +76,12 @@
       },
       "next_birthday_4_date": {
         "name": "Nächster Geburtstag 4 Datum"
+      },
+      "next_birthday_4_days_until": {
+        "name": "Nächster Geburtstag 4 Tage verbleibend"
+      },
+      "next_birthday_4_image": {
+        "name": "Nächster Geburtstag 4 Bild"
       },
       "next_birthday_5_name": {
         "name": "Nächster Geburtstag 5 Name"
@@ -68,6 +92,12 @@
       "next_birthday_5_date": {
         "name": "Nächster Geburtstag 5 Datum"
       },
+      "next_birthday_5_days_until": {
+        "name": "Nächster Geburtstag 5 Tage verbleibend"
+      },
+      "next_birthday_5_image": {
+        "name": "Nächster Geburtstag 5 Bild"
+      },
       "next_birthday_6_name": {
         "name": "Nächster Geburtstag 6 Name"
       },
@@ -76,6 +106,12 @@
       },
       "next_birthday_6_date": {
         "name": "Nächster Geburtstag 6 Datum"
+      },
+      "next_birthday_6_days_until": {
+        "name": "Nächster Geburtstag 6 Tage verbleibend"
+      },
+      "next_birthday_6_image": {
+        "name": "Nächster Geburtstag 6 Bild"
       },
       "all_upcoming_birthdays": {
         "name": "Alle anstehenden Geburtstage"

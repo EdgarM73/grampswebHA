@@ -32,6 +32,9 @@
       "next_birthday_1_date": {
         "name": "Sljedeći rođendan 1 Datum"
       },
+      "next_birthday_1_days": {
+        "name": "Sljedeći rođendan 1 Preostali dani"
+      },
       "next_birthday_2_name": {
         "name": "Sljedeći rođendan 2 Ime"
       },
@@ -40,6 +43,9 @@
       },
       "next_birthday_2_date": {
         "name": "Sljedeći rođendan 2 Datum"
+      },
+      "next_birthday_2_days": {
+        "name": "Sljedeći rođendan 2 Preostali dani"
       },
       "next_birthday_3_name": {
         "name": "Sljedeći rođendan 3 Ime"
@@ -50,6 +56,9 @@
       "next_birthday_3_date": {
         "name": "Sljedeći rođendan 3 Datum"
       },
+      "next_birthday_3_days": {
+        "name": "Sljedeći rođendan 3 Preostali dani"
+      },
       "next_birthday_4_name": {
         "name": "Sljedeći rođendan 4 Ime"
       },
@@ -58,6 +67,9 @@
       },
       "next_birthday_4_date": {
         "name": "Sljedeći rođendan 4 Datum"
+      },
+      "next_birthday_4_days": {
+        "name": "Sljedeći rođendan 4 Preostali dani"
       },
       "next_birthday_5_name": {
         "name": "Sljedeći rođendan 5 Ime"
@@ -68,6 +80,9 @@
       "next_birthday_5_date": {
         "name": "Sljedeći rođendan 5 Datum"
       },
+      "next_birthday_5_days": {
+        "name": "Sljedeći rođendan 5 Preostali dani"
+      },
       "next_birthday_6_name": {
         "name": "Sljedeći rođendan 6 Ime"
       },
@@ -76,6 +91,9 @@
       },
       "next_birthday_6_date": {
         "name": "Sljedeći rođendan 6 Datum"
+      },
+      "next_birthday_6_days": {
+        "name": "Sljedeći rođendan 6 Preostali dani"
       },
       "all_upcoming_birthdays": {
         "name": "Svi nadolazeći rođendani"

@@ -32,6 +32,9 @@
       "next_birthday_1_date": {
         "name": "Prossimo compleanno 1 Data"
       },
+      "next_birthday_1_days": {
+        "name": "Prossimo compleanno 1 Giorni rimanenti"
+      },
       "next_birthday_2_name": {
         "name": "Prossimo compleanno 2 Nome"
       },
@@ -40,6 +43,9 @@
       },
       "next_birthday_2_date": {
         "name": "Prossimo compleanno 2 Data"
+      },
+      "next_birthday_2_days": {
+        "name": "Prossimo compleanno 2 Giorni rimanenti"
       },
       "next_birthday_3_name": {
         "name": "Prossimo compleanno 3 Nome"
@@ -50,6 +56,9 @@
       "next_birthday_3_date": {
         "name": "Prossimo compleanno 3 Data"
       },
+      "next_birthday_3_days": {
+        "name": "Prossimo compleanno 3 Giorni rimanenti"
+      },
       "next_birthday_4_name": {
         "name": "Prossimo compleanno 4 Nome"
       },
@@ -58,6 +67,9 @@
       },
       "next_birthday_4_date": {
         "name": "Prossimo compleanno 4 Data"
+      },
+      "next_birthday_4_days": {
+        "name": "Prossimo compleanno 4 Giorni rimanenti"
       },
       "next_birthday_5_name": {
         "name": "Prossimo compleanno 5 Nome"
@@ -68,6 +80,9 @@
       "next_birthday_5_date": {
         "name": "Prossimo compleanno 5 Data"
       },
+      "next_birthday_5_days": {
+        "name": "Prossimo compleanno 5 Giorni rimanenti"
+      },
       "next_birthday_6_name": {
         "name": "Prossimo compleanno 6 Nome"
       },
@@ -76,6 +91,9 @@
       },
       "next_birthday_6_date": {
         "name": "Prossimo compleanno 6 Data"
+      },
+      "next_birthday_6_days": {
+        "name": "Prossimo compleanno 6 Giorni rimanenti"
       },
       "all_upcoming_birthdays": {
         "name": "Tutti i compleanni in arrivo"

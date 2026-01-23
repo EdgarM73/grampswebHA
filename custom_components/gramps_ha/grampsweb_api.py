@@ -958,7 +958,7 @@ class GrampsWebAPI:
                         if isinstance(event_type, dict)
                         else str(event_type)
                     )
-                    if "marriage" not in type_string.lower():
+                    if "marriage" not in type_string.lower() and "engagement" not in type_string.lower():
                         continue
 
                     dateval = event.get("date", {})
@@ -1007,7 +1007,7 @@ class GrampsWebAPI:
                     if isinstance(event_type, dict)
                     else str(event_type)
                 )
-                if "marriage" not in type_string.lower():
+                if "marriage" not in type_string.lower() and "engagement" not in type_string.lower():
                     continue
 
                 dateval = event.get("date", {})

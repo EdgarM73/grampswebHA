@@ -784,50 +784,79 @@ class GrampsWebAPI:
                 )
                 return []
 
-            anniversaries = []
+            # First pass: collect all anniversaries with event handles
+            anniversaries_with_events = {}  # key: (marriage_date, event_handle)
+            person_by_handle = {}  # key: person_handle, value: person_name
             marriage_events = 0
 
             for person in all_people:
                 self._ensure_person_events(person)
+                person_handle = person.get("handle", "")
+                person_name = self._get_person_name(person)
+                person_by_handle[person_handle] = person_name
 
                 # Look for marriage events
                 marriage_dates = self._get_marriage_dates(person)
                 marriage_events += len(marriage_dates)
-                for spouse_name, marriage_date in marriage_dates:
-                    person_name = self._get_person_name(person)
-                    anniversary = self._calculate_anniversary(
-                        person_name, spouse_name, marriage_date
-                    )
-                    if anniversary:
-                        anniversaries.append(anniversary)
+                for spouse_name, marriage_date, event_handle in marriage_dates:
+                    key = (str(marriage_date), event_handle)
+                    
+                    if key not in anniversaries_with_events:
+                        anniversaries_with_events[key] = {
+                            "person_names": set(),
+                            "marriage_date": marriage_date,
+                            "event_handle": event_handle,
+                            "spouse_name": spouse_name,
+                        }
+                    
+                    anniversaries_with_events[key]["person_names"].add(person_name)
 
-            # Deduplicate anniversaries: same marriage date with "Unknown" spouse
-            # likely means the same couple entered twice
-            # Keep only one entry per unique marriage date
-            seen_by_date = {}
-            deduplicated = []
+            # Second pass: create anniversary entries and find partners
+            anniversaries = []
+            seen_events = set()
             
-            for anniversary in anniversaries:
-                date_key = anniversary.get("marriage_date")
+            for (date_str, event_handle), data in anniversaries_with_events.items():
+                # Skip if we already processed this event
+                if event_handle in seen_events:
+                    continue
+                seen_events.add(event_handle)
                 
-                if date_key not in seen_by_date:
-                    # First time seeing this date, keep it
-                    seen_by_date[date_key] = anniversary
-                    deduplicated.append(anniversary)
-                # else: skip duplicate (same marriage date we've already added)
+                # Get the list of people for this event
+                person_names = sorted(data["person_names"])
+                marriage_date = data["marriage_date"]
+                
+                # Create anniversary entry
+                if len(person_names) >= 2:
+                    # We have both partners, combine them
+                    combined_name = " & ".join(person_names[:2])
+                else:
+                    # We only have one person, use the spouse name if available
+                    combined_name = f"{person_names[0]}"
+                    if data["spouse_name"]:
+                        combined_name = f"{person_names[0]} & {data['spouse_name']}"
+                
+                anniversary = self._calculate_anniversary(
+                    combined_name.split(" & ")[0],
+                    combined_name.split(" & ")[1] if " & " in combined_name else data["spouse_name"] or "Unknown",
+                    marriage_date
+                )
+                if anniversary:
+                    # Update the person_name to the combined version
+                    anniversary["person_name"] = combined_name
+                    anniversaries.append(anniversary)
 
             # Sort by days until anniversary
-            deduplicated.sort(key=lambda x: x.get("days_until", 999))
+            anniversaries.sort(key=lambda x: x.get("days_until", 999))
 
             _LOGGER.info(
                 "Anniversaries result: %s marriage events, %s entries after deduplication%s",
                 marriage_events,
-                len(deduplicated),
-                f" | first: {deduplicated[0]}" if deduplicated else "",
+                len(anniversaries),
+                f" | first: {anniversaries[0]}" if anniversaries else "",
             )
 
             # Return limited list
-            return deduplicated[:limit]
+            return anniversaries[:limit]
 
         except Exception as err:
             _LOGGER.error("Failed to get anniversaries: %s", err, exc_info=True)
@@ -927,7 +956,11 @@ class GrampsWebAPI:
             return False
 
     def _get_marriage_dates(self, person: dict) -> list:
-        """Get all marriage dates from person and family events."""
+        """Get all marriage dates from person and family events.
+        
+        Returns list of tuples: (spouse_name_or_none, marriage_date, event_handle)
+        where event_handle is used to find the partner later.
+        """
         marriage_dates = []
         try:
             person_handle = person.get("handle", "")
@@ -999,15 +1032,15 @@ class GrampsWebAPI:
                         continue
 
                     for spouse_handle in spouse_handles or [None]:
-                        spouse_name = "Unknown"
+                        spouse_name = None
                         if spouse_handle:
                             try:
                                 spouse_person = self._get(f"people/{spouse_handle}")
                                 if spouse_person:
                                     spouse_name = self._get_person_name(spouse_person)
                             except Exception:
-                                spouse_name = "Unknown"
-                        marriage_dates.append((spouse_name, parsed_dateval))
+                                spouse_name = None
+                        marriage_dates.append((spouse_name, parsed_dateval, ev_handle))
 
             # Also process any marriage events directly attached to the person
             for event_ref in event_ref_list:
@@ -1051,19 +1084,20 @@ class GrampsWebAPI:
                 if not parsed_dateval:
                     continue
 
-                # If we know spouses, emit one entry per spouse; otherwise unknown
+                # If we know spouses, emit one entry per spouse; otherwise None
                 if spouse_handles:
                     for spouse_handle in spouse_handles:
-                        spouse_name = "Unknown"
+                        spouse_name = None
                         try:
                             spouse_person = self._get(f"people/{spouse_handle}")
                             if spouse_person:
                                 spouse_name = self._get_person_name(spouse_person)
                         except Exception:
-                            spouse_name = "Unknown"
-                        marriage_dates.append((spouse_name, parsed_dateval))
+                            spouse_name = None
+                        marriage_dates.append((spouse_name, parsed_dateval, event_handle))
                 else:
-                    marriage_dates.append(("Unknown", parsed_dateval))
+                    # Return None for spouse_name to signal we need to find the partner
+                    marriage_dates.append((None, parsed_dateval, event_handle))
 
             return marriage_dates
 
@@ -1192,8 +1226,14 @@ class GrampsWebAPI:
             days_until = (next_anniversary - today).days
             years_together = today.year - marriage_date.year
 
+            # Build person_name string
+            if person2_name and person2_name != "Unknown":
+                person_name_str = f"{person1_name} & {person2_name}"
+            else:
+                person_name_str = person1_name
+
             return {
-                "person_name": f"{person1_name} & {person2_name}",
+                "person_name": person_name_str,
                 "marriage_date": marriage_date.isoformat(),
                 "next_anniversary": next_anniversary.isoformat(),
                 "years_together": years_together,

@@ -8,7 +8,8 @@
           "url": "URL",
           "username": "Korisničko ime (opcionalno)",
           "password": "Lozinka (opcionalno)",
-          "surname_filter": "Filter po prezimenu (opcionalno)"
+          "surname_filter": "Filter po prezimenu (opcionalno)",
+          "num_birthdays": "Broj rođendana (opcionalno)"
         }
       }
     },

@@ -8,7 +8,8 @@
           "url": "URL",
           "username": "Nom d'utilisateur (optionnel)",
           "password": "Mot de passe (optionnel)",
-          "surname_filter": "Filtre par nom de famille (optionnel)"
+          "surname_filter": "Filtre par nom de famille (optionnel)",
+          "num_birthdays": "Nombre d'anniversaires (optionnel)"
         }
       }
     },

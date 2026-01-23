@@ -19,6 +19,8 @@ from .const import (
     ATTR_AGE,
     ATTR_DAYS_UNTIL,
     CONF_URL,
+    CONF_NUM_BIRTHDAYS,
+    DEFAULT_NUM_BIRTHDAYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,9 +33,12 @@ async def async_setup_entry(
 ) -> None:
     """Set up Gramps Web sensors from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    
+    # Get number of birthdays to display from config (default 6)
+    num_birthdays = entry.data.get(CONF_NUM_BIRTHDAYS, DEFAULT_NUM_BIRTHDAYS)
 
     sensors: list[SensorEntity] = []
-    for i in range(6):  # Create sensors for next 6 birthdays
+    for i in range(num_birthdays):
         sensors.append(GrampsWebNextBirthdayNameSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayAgeSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayDateSensor(coordinator, entry, i))

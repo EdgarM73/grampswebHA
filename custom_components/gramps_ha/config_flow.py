@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SURNAME_FILTER
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SURNAME_FILTER, CONF_NUM_BIRTHDAYS, DEFAULT_NUM_BIRTHDAYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_USERNAME): cv.string,
         vol.Optional(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_SURNAME_FILTER): cv.string,
+        vol.Optional(CONF_NUM_BIRTHDAYS, default=DEFAULT_NUM_BIRTHDAYS): cv.positive_int,
     }
 )
 

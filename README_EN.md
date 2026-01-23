@@ -59,6 +59,7 @@ rm -rf temp
    - **Username**: (optional) Your Gramps Web username
    - **Password**: (optional) Your Gramps Web password
    - **Surname Filter**: (optional) Only display people with this surname
+   - **Number of Birthdays**: (optional, default: 6) How many birthdays to display
 
 ## Sensors
 

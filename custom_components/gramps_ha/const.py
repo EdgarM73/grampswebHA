@@ -7,6 +7,8 @@ CONF_URL = "url"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_SURNAME_FILTER = "surname_filter"
+CONF_NUM_BIRTHDAYS = "num_birthdays"
+DEFAULT_NUM_BIRTHDAYS = 6
 
 ATTR_PERSON_NAME = "person_name"
 ATTR_BIRTH_DATE = "birth_date"

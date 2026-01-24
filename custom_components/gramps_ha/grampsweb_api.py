@@ -657,8 +657,8 @@ class GrampsWebAPI:
 
             result = {
                 "person_name": name,
-                "birth_date": birth_date.isoformat(),
-                "next_birthday": next_birthday.isoformat(),
+                "birth_date": birth_date.strftime("%d.%m.%Y"),
+                "next_birthday": next_birthday.strftime("%d.%m.%Y"),
                 "age": age,
                 "days_until": days_until,
             }
@@ -1192,8 +1192,8 @@ class GrampsWebAPI:
 
             return {
                 "person_name": name,
-                "death_date": death_date.isoformat(),
-                "next_deathday": next_deathday.isoformat(),
+                "death_date": death_date.strftime("%d.%m.%Y"),
+                "next_deathday": next_deathday.strftime("%d.%m.%Y"),
                 "years_ago": years_ago,
                 "days_until": days_until,
             }
@@ -1234,8 +1234,8 @@ class GrampsWebAPI:
 
             return {
                 "person_name": person_name_str,
-                "marriage_date": marriage_date.isoformat(),
-                "next_anniversary": next_anniversary.isoformat(),
+                "marriage_date": marriage_date.strftime("%d.%m.%Y"),
+                "next_anniversary": next_anniversary.strftime("%d.%m.%Y"),
                 "years_together": years_together,
                 "days_until": days_until,
             }

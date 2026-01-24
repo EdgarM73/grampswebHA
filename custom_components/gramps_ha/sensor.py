@@ -188,7 +188,12 @@ class GrampsWebNextBirthdayDateSensor(GrampsWebNextBirthdayBase):
         if birth_date:
             try:
                 dt = datetime.fromisoformat(birth_date)
-                return dt.date()
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
             except Exception:
                 return None
         return None
@@ -218,7 +223,12 @@ class GrampsWebNextBirthdayUpcomingDateSensor(GrampsWebNextBirthdayBase):
         if next_birthday:
             try:
                 dt = datetime.fromisoformat(next_birthday)
-                return dt.date()
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
             except Exception:
                 return None
         return None
@@ -412,7 +422,16 @@ class GrampsWebNextDeathdayDateSensor(GrampsWebNextDeathdayBase):
             return None
         death_date = deathday_list[self._index].get("death_date")
         if death_date:
-            return datetime.fromisoformat(death_date).date()
+            try:
+                dt = datetime.fromisoformat(death_date)
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
+            except Exception:
+                return None
         return None
 
     @property
@@ -440,7 +459,16 @@ class GrampsWebNextDeathdayUpcomingDateSensor(GrampsWebNextDeathdayBase):
             return None
         next_deathday = deathday_list[self._index].get("next_deathday")
         if next_deathday:
-            return datetime.fromisoformat(next_deathday).date()
+            try:
+                dt = datetime.fromisoformat(next_deathday)
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
+            except Exception:
+                return None
         return None
 
     @property
@@ -562,7 +590,16 @@ class GrampsWebNextAnniversaryDateSensor(GrampsWebNextAnniversaryBase):
             return None
         marriage_date = anniversary_list[self._index].get("marriage_date")
         if marriage_date:
-            return datetime.fromisoformat(marriage_date).date()
+            try:
+                dt = datetime.fromisoformat(marriage_date)
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
+            except Exception:
+                return None
         return None
 
     @property
@@ -590,7 +627,16 @@ class GrampsWebNextAnniversaryUpcomingDateSensor(GrampsWebNextAnniversaryBase):
             return None
         next_anniversary = anniversary_list[self._index].get("next_anniversary")
         if next_anniversary:
-            return datetime.fromisoformat(next_anniversary).date()
+            try:
+                dt = datetime.fromisoformat(next_anniversary)
+                # For German locale, format as dd.mm.yyyy
+                locale = self.coordinator.hass.config.get('language', 'en')
+                if locale in ['de', 'de_DE']:
+                    return dt.strftime("%d.%m.%Y")
+                # Default ISO format for other locales
+                return dt.date().isoformat()
+            except Exception:
+                return None
         return None
 
     @property

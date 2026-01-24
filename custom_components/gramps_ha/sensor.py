@@ -63,6 +63,7 @@ async def async_setup_entry(
             sensors.append(GrampsWebNextDeathdayUpcomingDateSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayYearsAgoSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayDaysUntilSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextDeathdayImageSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayLinkSensor(coordinator, entry, i))
 
     # Anniversary sensors (if enabled)
@@ -533,6 +534,40 @@ class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextDeathdayBase):
     @property
     def icon(self):
         return "mdi:calendar-clock"
+
+
+class GrampsWebNextDeathdayImageSensor(GrampsWebNextDeathdayBase):
+    """Next deathday sensor showing image URL."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Image"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_image"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        return deathday_list[self._index].get("image_url", "No Image")
+
+    @property
+    def icon(self):
+        return "mdi:image-outline"
+
+    @property
+    def entity_picture(self):
+        """Return entity picture from Gramps if available."""
+        if not self.coordinator.data:
+            return None
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        deathday_list = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(deathday_list):
+            return None
+        return deathday_list[self._index].get("image_url")
 
 
 class GrampsWebNextDeathdayLinkSensor(GrampsWebNextDeathdayBase):

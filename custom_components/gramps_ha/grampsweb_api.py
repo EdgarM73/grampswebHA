@@ -1197,8 +1197,11 @@ class GrampsWebAPI:
             name = self._get_person_name(person)
             years_ago = today.year - death_date.year
             person_handle = person.get("handle")
+            
+            # Get image URL if person data is provided
+            image_url = self._get_person_image_url(person)
 
-            return {
+            result = {
                 "person_name": name,
                 "death_date": death_date.isoformat(),
                 "next_deathday": next_deathday.isoformat(),
@@ -1206,6 +1209,11 @@ class GrampsWebAPI:
                 "days_until": days_until,
                 "person_handle": person_handle,
             }
+            
+            if image_url:
+                result["image_url"] = image_url
+            
+            return result
 
         except Exception as err:
             _LOGGER.debug("Could not calculate deathday: %s", err)

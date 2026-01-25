@@ -123,14 +123,6 @@ class GrampsWebNextBirthdayBase(CoordinatorEntity, SensorEntity):
             "image_url": birthday.get("image_url"),
         }
 
-    @property
-    def entity_picture(self):
-        """Return entity picture from Gramps if available."""
-        birthday = self._get_birthday()
-        if not birthday:
-            return None
-        return birthday.get("image_url")
-
 
 class GrampsWebNextBirthdayNameSensor(GrampsWebNextBirthdayBase):
     """Next birthday sensor showing only the name."""

@@ -245,6 +245,11 @@ class GrampsWebNextBirthdayDaysUntilSensor(GrampsWebNextBirthdayBase):
         return birthday.get("days_until", 999)
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return True
+
+    @property
     def icon(self):
         return "mdi:calendar-clock"
 
@@ -530,6 +535,11 @@ class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextDeathdayBase):
         return deathday_list[self._index].get("days_until", 999)
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return True
+
+    @property
     def icon(self):
         return "mdi:calendar-clock"
 
@@ -730,6 +740,11 @@ class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextAnniversaryBase):
         if self._index >= len(anniversary_list):
             return 999
         return anniversary_list[self._index].get("days_until", 999)
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return True
 
     @property
     def icon(self):

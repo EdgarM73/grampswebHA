@@ -241,8 +241,8 @@ class GrampsWebNextBirthdayDaysUntilSensor(GrampsWebNextBirthdayBase):
     def native_value(self):
         birthday = self._get_birthday()
         if not birthday:
-            return None
-        return birthday.get("days_until")
+            return 999
+        return birthday.get("days_until", 999)
 
     @property
     def icon(self):
@@ -522,12 +522,12 @@ class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextDeathdayBase):
     @property
     def native_value(self):
         if not self.coordinator.data:
-            return None
+            return 999
         deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
         deathday_list = deathdays.get(self._entry.entry_id, [])
         if self._index >= len(deathday_list):
-            return None
-        return deathday_list[self._index].get("days_until")
+            return 999
+        return deathday_list[self._index].get("days_until", 999)
 
     @property
     def icon(self):
@@ -724,12 +724,12 @@ class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextAnniversaryBase):
     @property
     def native_value(self):
         if not self.coordinator.data:
-            return None
+            return 999
         anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
         anniversary_list = anniversaries.get(self._entry.entry_id, [])
         if self._index >= len(anniversary_list):
-            return None
-        return anniversary_list[self._index].get("days_until")
+            return 999
+        return anniversary_list[self._index].get("days_until", 999)
 
     @property
     def icon(self):

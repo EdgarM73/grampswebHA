@@ -236,6 +236,7 @@ class GrampsWebNextBirthdayDaysUntilSensor(GrampsWebNextBirthdayBase):
         self._attr_name = f"Next Birthday {index + 1} Days Until"
         self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_days_until"
         self._attr_native_unit_of_measurement = "days"
+        self._attr_native_value = 999
 
     @property
     def native_value(self):
@@ -523,6 +524,7 @@ class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextDeathdayBase):
         self._attr_name = f"Next Deathday {index + 1} Days Until"
         self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_days_until"
         self._attr_native_unit_of_measurement = "days"
+        self._attr_native_value = 999
 
     @property
     def native_value(self):
@@ -730,6 +732,7 @@ class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextAnniversaryBase):
         self._attr_name = f"Next Anniversary {index + 1} Days Until"
         self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_days_until"
         self._attr_native_unit_of_measurement = "days"
+        self._attr_native_value = 999
 
     @property
     def native_value(self):

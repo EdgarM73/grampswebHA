@@ -790,14 +790,14 @@ class GrampsWebAPI:
 
             # First pass: collect all anniversaries with event handles
             anniversaries_with_events = {}  # key: (marriage_date, event_handle)
-            person_by_handle = {}  # key: person_handle, value: person_name
+            person_by_handle = {}  # key: person_handle, value: person_obj
             marriage_events = 0
 
             for person in all_people:
                 self._ensure_person_events(person)
                 person_handle = person.get("handle", "")
                 person_name = self._get_person_name(person)
-                person_by_handle[person_handle] = person_name
+                person_by_handle[person_handle] = person
 
                 # Look for marriage events
                 marriage_dates = self._get_marriage_dates(person)
@@ -808,6 +808,7 @@ class GrampsWebAPI:
                     if key not in anniversaries_with_events:
                         anniversaries_with_events[key] = {
                             "person_names": set(),
+                            "person_handles": [],
                             "marriage_date": marriage_date,
                             "event_handle": event_handle,
                             "spouse_name": spouse_name,
@@ -815,6 +816,8 @@ class GrampsWebAPI:
                         }
                     
                     anniversaries_with_events[key]["person_names"].add(person_name)
+                    if person_handle not in anniversaries_with_events[key]["person_handles"]:
+                        anniversaries_with_events[key]["person_handles"].append(person_handle)
 
             # Second pass: create anniversary entries and find partners
             anniversaries = []
@@ -828,6 +831,7 @@ class GrampsWebAPI:
                 
                 # Get the list of people for this event
                 person_names = sorted(data["person_names"])
+                person_handles = data.get("person_handles", [])
                 marriage_date = data["marriage_date"]
                 family_handle = data.get("family_handle")
                 
@@ -835,17 +839,24 @@ class GrampsWebAPI:
                 if len(person_names) >= 2:
                     # We have both partners, combine them
                     combined_name = " & ".join(person_names[:2])
+                    person1_handle = person_handles[0] if len(person_handles) > 0 else None
+                    person2_handle = person_handles[1] if len(person_handles) > 1 else None
                 else:
                     # We only have one person, use the spouse name if available
                     combined_name = f"{person_names[0]}"
                     if data["spouse_name"]:
                         combined_name = f"{person_names[0]} & {data['spouse_name']}"
+                    person1_handle = person_handles[0] if len(person_handles) > 0 else None
+                    person2_handle = None
                 
                 anniversary = self._calculate_anniversary(
                     combined_name.split(" & ")[0],
                     combined_name.split(" & ")[1] if " & " in combined_name else data["spouse_name"] or "Unknown",
                     marriage_date,
-                    family_handle
+                    family_handle,
+                    person1_handle,
+                    person2_handle,
+                    person_by_handle
                 )
                 if anniversary:
                     # Update the person_name to the combined version
@@ -1220,7 +1231,8 @@ class GrampsWebAPI:
             return None
 
     def _calculate_anniversary(
-        self, person1_name: str, person2_name: str, dateval, family_handle: str = None
+        self, person1_name: str, person2_name: str, dateval, family_handle: str = None, 
+        person1_handle: str = None, person2_handle: str = None, person_by_handle: dict = None
     ) -> dict | None:
         """Calculate next anniversary for a couple."""
         try:
@@ -1259,6 +1271,19 @@ class GrampsWebAPI:
 
             if family_handle:
                 result["family_handle"] = family_handle
+            
+            # Get images for both partners if available
+            if person_by_handle and person1_handle and person1_handle in person_by_handle:
+                person1 = person_by_handle[person1_handle]
+                image1 = self._get_person_image_url(person1)
+                if image1:
+                    result["image_url_person1"] = image1
+            
+            if person_by_handle and person2_handle and person2_handle in person_by_handle:
+                person2 = person_by_handle[person2_handle]
+                image2 = self._get_person_image_url(person2)
+                if image2:
+                    result["image_url_person2"] = image2
 
             return result
 

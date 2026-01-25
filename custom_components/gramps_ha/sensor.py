@@ -74,6 +74,8 @@ async def async_setup_entry(
             sensors.append(GrampsWebNextAnniversaryDateSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextAnniversaryUpcomingDateSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextAnniversaryDaysUntilSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextAnniversaryImagePerson1Sensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextAnniversaryImagePerson2Sensor(coordinator, entry, i))
             sensors.append(GrampsWebNextAnniversaryLinkSensor(coordinator, entry, i))
 
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
@@ -724,6 +726,74 @@ class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextAnniversaryBase):
     @property
     def icon(self):
         return "mdi:calendar-clock"
+
+
+class GrampsWebNextAnniversaryImagePerson1Sensor(GrampsWebNextAnniversaryBase):
+    """Next anniversary sensor showing image of person 1."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Image Person 1"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_image_person1"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("image_url_person1", "No Image")
+
+    @property
+    def icon(self):
+        return "mdi:image-outline"
+
+    @property
+    def entity_picture(self):
+        """Return entity picture from Gramps if available."""
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("image_url_person1")
+
+
+class GrampsWebNextAnniversaryImagePerson2Sensor(GrampsWebNextAnniversaryBase):
+    """Next anniversary sensor showing image of person 2."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Anniversary {index + 1} Image Person 2"
+        self._attr_unique_id = f"{entry.entry_id}_anniversary_{index}_image_person2"
+
+    @property
+    def native_value(self):
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("image_url_person2", "No Image")
+
+    @property
+    def icon(self):
+        return "mdi:image-outline"
+
+    @property
+    def entity_picture(self):
+        """Return entity picture from Gramps if available."""
+        if not self.coordinator.data:
+            return None
+        anniversaries = self.coordinator.hass.data.get(f"{DOMAIN}_anniversaries", {})
+        anniversary_list = anniversaries.get(self._entry.entry_id, [])
+        if self._index >= len(anniversary_list):
+            return None
+        return anniversary_list[self._index].get("image_url_person2")
 
 
 class GrampsWebNextAnniversaryLinkSensor(GrampsWebNextAnniversaryBase):

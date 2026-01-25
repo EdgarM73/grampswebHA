@@ -8,6 +8,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/EdgarM73/gramps-ha/issues",
   "requirements": ["requests>=2.28.0"],
-  "version": "2026.01.35",
+  "version": "2026.01.36",
   "homeassistant": "2023.1.0"
 }

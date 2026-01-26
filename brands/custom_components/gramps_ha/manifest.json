@@ -1,7 +1,0 @@
-{
-  "domain": "gramps_ha",
-  "name": "Gramps HA",
-  "documentation": "https://github.com/EdgarM73/grampswebHA",
-  "issue_tracker": "https://github.com/EdgarM73/grampswebHA/issues",
-  "codeowners": ["@EdgarM73"]
-}

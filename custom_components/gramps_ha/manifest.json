@@ -4,11 +4,11 @@
   "codeowners": ["@EdgarM73"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/EdgarM73/gramps-ha",
+  "documentation": "https://github.com/EdgarM73/grampswebHA",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/EdgarM73/gramps-ha/issues",
+  "issue_tracker": "https://github.com/EdgarM73/grampswebHA/issues",
   "requirements": ["requests>=2.28.0"],
-  "version": "2026.01.41",
+  "version": "2026.01.1",
   "homeassistant": "2023.1.0"
 }
 

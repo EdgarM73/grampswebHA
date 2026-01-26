@@ -7,7 +7,7 @@ Anleitung zur Einreichung von Gramps HA in die offiziellen HACS-Repositories.
 
 ## Voraussetzungen (bereits erfüllt ✅)
 
-- ✅ GitHub Repository: https://github.com/EdgarM73/gramps-ha
+- ✅ GitHub Repository: https://github.com/EdgarM73/grampswebHA
 - ✅ `hacs.json` vorhanden und korrekt
 - ✅ `manifest.json` mit korrekter Struktur
 - ✅ Release v2026.01.24 Tag erstellt
@@ -20,7 +20,7 @@ Anleitung zur Einreichung von Gramps HA in die offiziellen HACS-Repositories.
 
 ⚠️ **Wichtig:** HACS benötigt einen offiziellen GitHub Release (nicht nur ein Tag)!
 
-1. Gehe zu: https://github.com/EdgarM73/gramps-ha/releases/new
+1. Gehe zu: https://github.com/EdgarM73/grampswebHA/releases/new
 
 2. **Einstellungen:**
   - **Choose a tag:** v2026.01.24 (aus Dropdown wählen)
@@ -59,14 +59,14 @@ Die Integration erstellt für die nächsten 10 Geburtstage, Todestage und Hochze
 
 1. HACS öffnen → Integrationen
 2. ⋮ (Menü) → Custom repositories
-3. Repository-URL: `https://github.com/EdgarM73/gramps-ha`
+3. Repository-URL: `https://github.com/EdgarM73/grampswebHA`
 4. Kategorie: **Integration**
 5. Nach "Gramps HA" suchen und installieren
 6. Home Assistant neu starten
 
 ### Manuelle Installation
 
-Siehe [README.md](https://github.com/EdgarM73/gramps-ha#installation)
+Siehe [README.md](https://github.com/EdgarM73/grampswebHA#installation)
 
 ## Konfiguration
 
@@ -77,7 +77,7 @@ Siehe [README.md](https://github.com/EdgarM73/gramps-ha#installation)
 
 ## Dashboard-Vorlagen
 
-Vollständige Lovelace-Beispiele (Grid, Markdown, Entities) in [EXAMPLES.md](https://github.com/EdgarM73/gramps-ha/blob/main/EXAMPLES.md)
+Vollständige Lovelace-Beispiele (Grid, Markdown, Entities) in [EXAMPLES.md](https://github.com/EdgarM73/grampswebHA/blob/main/EXAMPLES.md)
 
 ## Changelog
 
@@ -155,7 +155,7 @@ Die Datei ist eine JSON-Liste, also zwischen zwei anderen Einträgen einfügen:
 Add Gramps HA - A Home Assistant integration for Gramps Web genealogy software.
 
 ## Repository
-https://github.com/EdgarM73/gramps-ha
+https://github.com/EdgarM73/grampswebHA
 
 ## Features
 - Displays next 6 birthdays from Gramps Web genealogy database
@@ -197,12 +197,12 @@ Benutzer können dein Repository direkt hinzufügen:
 
 1. HACS öffnen → Integrationen
 2. ⋮ → Custom repositories
-3. `https://github.com/EdgarM73/gramps-ha`
+3. `https://github.com/EdgarM73/grampswebHA`
 4. Kategorie: Integration
 
 ## Wichtige Links
 
-- **Dein Repository:** https://github.com/EdgarM73/gramps-ha
+- **Dein Repository:** https://github.com/EdgarM73/grampswebHA
 - **HACS Default Repo:** https://github.com/hacs/default
 - **HACS Dokumentation:** https://hacs.xyz/docs/publish/start
 - **Integration Requirements:** https://hacs.xyz/docs/publish/integration
@@ -211,7 +211,7 @@ Benutzer können dein Repository direkt hinzufügen:
 
 ### "Release not found"
 - Stelle sicher, dass v1.0.0 als GitHub Release (nicht nur Tag) existiert
-- Check: https://github.com/EdgarM73/gramps-ha/releases
+- Check: https://github.com/EdgarM73/grampswebHA/releases
 
 ### "Invalid hacs.json"
 ```bash

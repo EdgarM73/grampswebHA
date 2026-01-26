@@ -10,7 +10,7 @@ And if you already have a family tree, you might as well display family birthday
 
 ## Features
 
-- 🎂 Displays the next 10 birthdays
+- 🎂 Displays the next 6 ( configurable ) birthdays
 - 📅 Automatically calculates days until the next birthday
 - 🎉 Shows the person's age on their upcoming birthday
 - 🧩 7 sensors per birthday: Name, Age, Date, Upcoming Date, Days Remaining, Image, Link
@@ -18,8 +18,8 @@ And if you already have a family tree, you might as well display family birthday
 - 🔗 Direct links to persons and families in Gramps Web
 - 🔄 Automatic updates every 6 hours
 - 🔐 Supports authenticated and public Gramps Web instances
-- 🪦 **Optional: Displays upcoming 10 memorial dates/death anniversaries** (with image and link)
-- 💍 **Optional: Displays upcoming 10 wedding anniversaries** (with images of both partners and family link)
+- 🪦 **Optional: Displays upcoming 6 memorial dates/death anniversaries** (with image and link)
+- 💍 **Optional: Displays upcoming 6 wedding anniversaries** (with images of both partners and family link)
 - 🌍 Multilingual: German, English, French, Italian, Bosnian
 
 ## Installation
@@ -29,7 +29,7 @@ And if you already have a family tree, you might as well display family birthday
 1. Open HACS in Home Assistant
 2. Click on the three dots (⋮) in the top right
 3. Select **Custom repositories**
-4. Add the repository URL: `https://github.com/EdgarM73/gramps-ha`
+4. Add the repository URL: `https://github.com/EdgarM73/grampswebHA`
 5. Select category: **Integration**
 6. Click **Add**
 7. Search for "Gramps HA" and install it
@@ -37,7 +37,7 @@ And if you already have a family tree, you might as well display family birthday
 
 ### Manual Installation
 
-1. Download the latest version from [GitHub](https://github.com/EdgarM73/gramps-ha/releases)
+1. Download the latest version from [GitHub](https://github.com/EdgarM73/grampswebHA/releases)
 2. Extract the archive
 3. Copy the `custom_components/gramps_ha` folder to your `<config>/custom_components/` directory
 4. Restart Home Assistant
@@ -46,7 +46,7 @@ And if you already have a family tree, you might as well display family birthday
 
 ```bash
 cd /config/custom_components
-git clone https://github.com/EdgarM73/gramps-ha.git temp
+git clone https://github.com/EdgarM73/grampswebHA.git temp
 mv temp/custom_components/gramps_ha ./
 rm -rf temp
 ```

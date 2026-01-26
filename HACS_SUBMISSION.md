@@ -10,7 +10,7 @@ Anleitung zur Einreichung von Gramps HA in die offiziellen HACS-Repositories.
 - ✅ GitHub Repository: https://github.com/EdgarM73/grampswebHA
 - ✅ `hacs.json` vorhanden und korrekt
 - ✅ `manifest.json` mit korrekter Struktur
-- ✅ Release v2026.01.24 Tag erstellt
+- ✅ Release v2026.1.1 Tag erstellt
 - ✅ README.md mit Installationsanleitung
 - ✅ Icon/Logo (icon.png)
 - ✅ Übersetzungen in mehreren Sprachen
@@ -23,22 +23,22 @@ Anleitung zur Einreichung von Gramps HA in die offiziellen HACS-Repositories.
 1. Gehe zu: https://github.com/EdgarM73/grampswebHA/releases/new
 
 2. **Einstellungen:**
-  - **Choose a tag:** v2026.01.24 (aus Dropdown wählen)
-  - **Release title:** `v2026.01.24 - Gramps HA Integration`
+  - **Choose a tag:** v2026.1.1 (aus Dropdown wählen)
+  - **Release title:** `v2026.1.1 - Gramps HA Integration`
   - **Description:** (siehe unten)
 
 3. **Release-Beschreibung:**
 
 ```markdown
-# Gramps HA Integration v2026.01.24
+# Gramps HA Integration v2026.1.1
 
 Aktuelle Version der Gramps Web Integration für Home Assistant.
 
 ## Features
 
-- 🎂 Zeigt die nächsten 10 Geburtstage an (je 7 Sensoren pro Geburtstag)
-- 🪦 Optional: Zeigt die nächsten 10 Gedenktage/Todestage an (je 7 Sensoren)
-- 💍 Optional: Zeigt die nächsten 10 Hochzeitstage/Jahrestage an (je 8 Sensoren)
+- 🎂 Zeigt die nächsten 6 ( konfigurierbar ) Geburtstage an (je 7 Sensoren pro Geburtstag)
+- 🪦 Optional: Zeigt die nächsten 6 Gedenktage/Todestage an (je 7 Sensoren)
+- 💍 Optional: Zeigt die nächsten 6 Hochzeitstage/Jahrestage an (je 8 Sensoren)
 - 📅 Berechnet automatisch die Tage bis zum nächsten Ereignis
 - 🎉 Zeigt das Alter der Person am kommenden Geburtstag
 - 🔄 Automatische Aktualisierung alle 6 Stunden

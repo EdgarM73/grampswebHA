@@ -269,7 +269,7 @@ class GrampsWebNextBirthdayDaysUntilSensor(GrampsWebNextBirthdayBase):
 class GrampsWebNextBirthdayImageSensor(GrampsWebNextBirthdayBase):
     """Next birthday sensor showing image URL."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -299,7 +299,7 @@ class GrampsWebNextBirthdayImageSensor(GrampsWebNextBirthdayBase):
 class GrampsWebNextBirthdayLinkSensor(GrampsWebNextBirthdayBase):
     """Next birthday sensor showing Gramps Web link."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -560,7 +560,7 @@ class GrampsWebNextDeathdayDaysUntilSensor(GrampsWebNextDeathdayBase):
 class GrampsWebNextDeathdayImageSensor(GrampsWebNextDeathdayBase):
     """Next deathday sensor showing image URL."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -596,7 +596,7 @@ class GrampsWebNextDeathdayImageSensor(GrampsWebNextDeathdayBase):
 class GrampsWebNextDeathdayLinkSensor(GrampsWebNextDeathdayBase):
     """Next deathday sensor showing Gramps Web link."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -768,7 +768,7 @@ class GrampsWebNextAnniversaryDaysUntilSensor(GrampsWebNextAnniversaryBase):
 class GrampsWebNextAnniversaryImagePerson1Sensor(GrampsWebNextAnniversaryBase):
     """Next anniversary sensor showing image of person 1."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -804,7 +804,7 @@ class GrampsWebNextAnniversaryImagePerson1Sensor(GrampsWebNextAnniversaryBase):
 class GrampsWebNextAnniversaryImagePerson2Sensor(GrampsWebNextAnniversaryBase):
     """Next anniversary sensor showing image of person 2."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)
@@ -840,7 +840,7 @@ class GrampsWebNextAnniversaryImagePerson2Sensor(GrampsWebNextAnniversaryBase):
 class GrampsWebNextAnniversaryLinkSensor(GrampsWebNextAnniversaryBase):
     """Next anniversary sensor showing Gramps Web link to family."""
     
-    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_enabled_default = True
 
     def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
         super().__init__(coordinator, entry, index)

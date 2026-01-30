@@ -45,9 +45,9 @@ async def async_setup_entry(
 
     sensors: list[SensorEntity] = []
     
-    # Birthday sensors - always create all configured sensors (10 by default)
-    # even if there aren't enough birthdays. Sensors without data will show default values.
-    for i in range(10):  # Always create 10 sensors to prevent template errors
+    # Birthday sensors - create as many as configured
+    # even if there aren't enough birthdays. Sensors ohne Daten zeigen Defaultwerte.
+    for i in range(num_birthdays):
         sensors.append(GrampsWebNextBirthdayNameSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayAgeSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayDateSensor(coordinator, entry, i))
@@ -56,9 +56,9 @@ async def async_setup_entry(
         sensors.append(GrampsWebNextBirthdayImageSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayLinkSensor(coordinator, entry, i))
 
-    # Deathday sensors (if enabled) - always create 10
+    # Deathday sensors (if enabled) - create as many as configured
     if show_deathdays:
-        for i in range(10):
+        for i in range(num_birthdays):
             sensors.append(GrampsWebNextDeathdayNameSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayDateSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayUpcomingDateSensor(coordinator, entry, i))
@@ -67,9 +67,9 @@ async def async_setup_entry(
             sensors.append(GrampsWebNextDeathdayImageSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayLinkSensor(coordinator, entry, i))
 
-    # Anniversary sensors (if enabled) - always create 10
+    # Anniversary sensors (if enabled) - create as many as configured
     if show_anniversaries:
-        for i in range(10):
+        for i in range(num_birthdays):
             sensors.append(GrampsWebNextAnniversaryNameSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextAnniversaryYearsTogetherSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextAnniversaryDateSensor(coordinator, entry, i))

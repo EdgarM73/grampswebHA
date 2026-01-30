@@ -1,7 +1,7 @@
 {
   "name": "Gramps HA",
   "content_in_root": false,
-  "filename": "gramps_ha",
+  "filename": "grampswebDates",
   "render_readme": true,
   "homeassistant": "2023.1.0"
 }

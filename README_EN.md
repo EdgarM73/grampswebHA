@@ -29,7 +29,7 @@ And if you already have a family tree, you might as well display family birthday
 1. Open HACS in Home Assistant
 2. Click on the three dots (⋮) in the top right
 3. Select **Custom repositories**
-4. Add the repository URL: `https://github.com/EdgarM73/grampswebHA`
+4. Add the repository URL: `https://github.com/EdgarM73/grampswebDates`
 5. Select category: **Integration**
 6. Click **Add**
 7. Search for "Gramps HA" and install it
@@ -37,7 +37,7 @@ And if you already have a family tree, you might as well display family birthday
 
 ### Manual Installation
 
-1. Download the latest version from [GitHub](https://github.com/EdgarM73/grampswebHA/releases)
+1. Download the latest version from [GitHub](https://github.com/EdgarM73/grampswebDates/releases)
 2. Extract the archive
 3. Copy the `custom_components/gramps_ha` folder to your `<config>/custom_components/` directory
 4. Restart Home Assistant
@@ -46,7 +46,7 @@ And if you already have a family tree, you might as well display family birthday
 
 ```bash
 cd /config/custom_components
-git clone https://github.com/EdgarM73/grampswebHA.git temp
+git clone https://github.com/EdgarM73/grampswebDates.git temp
 mv temp/custom_components/gramps_ha ./
 rm -rf temp
 ```

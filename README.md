@@ -7,6 +7,8 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 
 !Achtung !  Der größte Teil dieser Integration ist KI generiert, sonst hätte ich aktuell gar nicht die Zeit gehabt.
 
+
+
 ## Features
 
 - 🎂 Zeigt die nächsten 6 ( konfigurierbar ) Geburtstage an
@@ -24,6 +26,8 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 ## Installation
 
 ### HACS (empfohlen)
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=EdgarM73&repository=https%3A%2F%2Fgithub.com%2FEdgarM73%2FgrampswebHA&category=Integration)
 
 1. Öffnen Sie HACS in Home Assistant
 2. Klicken Sie auf die drei Punkte (⋮) oben rechts

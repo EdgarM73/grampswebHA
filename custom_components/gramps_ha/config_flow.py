@@ -18,8 +18,8 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_URL): cv.string,
-        vol.Optional(CONF_USERNAME): cv.string,
-        vol.Optional(CONF_PASSWORD): cv.string,
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_NUM_BIRTHDAYS, default=DEFAULT_NUM_BIRTHDAYS): cv.positive_int,
         vol.Optional(CONF_SHOW_DEATHDAYS, default=DEFAULT_SHOW_DEATHDAYS): cv.boolean,
         vol.Optional(CONF_SHOW_ANNIVERSARIES, default=DEFAULT_SHOW_ANNIVERSARIES): cv.boolean,

@@ -1,7 +1,7 @@
 """API client for Gramps Web."""
 
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import requests
 import hashlib
 import os
@@ -31,6 +31,19 @@ class GrampsWebAPI:
         if self.hass_config_path:
             self.images_dir = os.path.join(self.hass_config_path, "www", "gramps")
             os.makedirs(self.images_dir, exist_ok=True)
+        
+        # Caching: Store fetched data with timestamps
+        self._cache = {
+            "people": None,
+            "people_timestamp": None,
+            "birthdays": None,
+            "birthdays_timestamp": None,
+            "deathdays": None,
+            "deathdays_timestamp": None,
+            "anniversaries": None,
+            "anniversaries_timestamp": None,
+        }
+        self._cache_ttl_seconds = 3600  # Cache for 1 hour
 
     def _authenticate(self):
         """Authenticate with the Gramps Web API."""
@@ -232,21 +245,45 @@ class GrampsWebAPI:
         except Exception:
             return person
 
+    def _is_cache_valid(self, cache_key: str) -> bool:
+        """Check if cached data is still valid."""
+        timestamp_key = f"{cache_key}_timestamp"
+        if self._cache[cache_key] is None or self._cache[timestamp_key] is None:
+            return False
+        
+        age = datetime.now() - self._cache[timestamp_key]
+        return age.total_seconds() < self._cache_ttl_seconds
+
     def get_people(self):
-        """Get all people from Gramps Web."""
-        _LOGGER.debug("Fetching people from %s", self.url)
+        """Get all people from Gramps Web with caching."""
+        # Check cache first
+        if self._is_cache_valid("people"):
+            _LOGGER.debug("Returning cached people data")
+            return self._cache["people"]
+        
+        _LOGGER.debug("Fetching people from %s (cache miss)", self.url)
         try:
             result = self._get("people/")
             _LOGGER.debug("API response type: %s", type(result))
+            
+            # Update cache
+            self._cache["people"] = result
+            self._cache["people_timestamp"] = datetime.now()
+            
             return result
         except Exception as err:
             _LOGGER.error("Failed to get people: %s", err, exc_info=True)
             raise
 
     def get_birthdays(self, limit: int = 50):
-        """Get upcoming birthdays from Gramps Web."""
+        """Get upcoming birthdays from Gramps Web with caching."""
+        # Check cache first
+        if self._is_cache_valid("birthdays"):
+            _LOGGER.debug("Returning cached birthdays data")
+            return self._cache["birthdays"]
+        
         try:
-            _LOGGER.info("Fetching birthdays from Gramps Web API")
+            _LOGGER.info("Fetching birthdays from Gramps Web API (cache miss)")
 
             # Get all people
             try:
@@ -386,7 +423,13 @@ class GrampsWebAPI:
             # Sort by days until birthday
             birthdays.sort(key=lambda x: x["days_until"])
 
-            return birthdays[:limit]
+            result = birthdays[:limit]
+            
+            # Update cache
+            self._cache["birthdays"] = result
+            self._cache["birthdays_timestamp"] = datetime.now()
+            
+            return result
 
         except Exception as err:
             _LOGGER.error("Failed to fetch birthdays: %s", err, exc_info=True)
@@ -677,9 +720,14 @@ class GrampsWebAPI:
             return None
 
     def get_deathdays(self, limit: int = 50):
-        """Get upcoming deathdays/memorial dates from Gramps Web."""
+        """Get upcoming deathdays/memorial dates from Gramps Web with caching."""
+        # Check cache first
+        if self._is_cache_valid("deathdays"):
+            _LOGGER.debug("Returning cached deathdays data")
+            return self._cache["deathdays"]
+        
         try:
-            _LOGGER.info("Fetching deathdays from Gramps Web API")
+            _LOGGER.info("Fetching deathdays from Gramps Web API (cache miss)")
 
             all_people = self.get_people()
             if not isinstance(all_people, list):
@@ -770,16 +818,27 @@ class GrampsWebAPI:
             )
 
             # Return limited list
-            return deathdays[:limit]
+            result = deathdays[:limit]
+            
+            # Update cache
+            self._cache["deathdays"] = result
+            self._cache["deathdays_timestamp"] = datetime.now()
+            
+            return result
 
         except Exception as err:
             _LOGGER.error("Failed to get deathdays: %s", err, exc_info=True)
             return []
 
     def get_anniversaries(self, limit: int = 50):
-        """Get upcoming anniversaries from Gramps Web."""
+        """Get upcoming anniversaries from Gramps Web with caching."""
+        # Check cache first
+        if self._is_cache_valid("anniversaries"):
+            _LOGGER.debug("Returning cached anniversaries data")
+            return self._cache["anniversaries"]
+        
         try:
-            _LOGGER.info("Fetching anniversaries from Gramps Web API")
+            _LOGGER.info("Fetching anniversaries from Gramps Web API (cache miss)")
 
             all_people = self.get_people()
             if not isinstance(all_people, list):
@@ -874,7 +933,13 @@ class GrampsWebAPI:
             )
 
             # Return limited list
-            return anniversaries[:limit]
+            result = anniversaries[:limit]
+            
+            # Update cache
+            self._cache["anniversaries"] = result
+            self._cache["anniversaries_timestamp"] = datetime.now()
+            
+            return result
 
         except Exception as err:
             _LOGGER.error("Failed to get anniversaries: %s", err, exc_info=True)

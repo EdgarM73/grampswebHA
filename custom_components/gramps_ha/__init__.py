@@ -15,7 +15,7 @@ from homeassistant.helpers.device_registry import (
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.components import persistent_notification
 
-from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD
+from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +60,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass_config_path=hass.config.config_dir,
         )
 
-        coordinator = GrampsWebCoordinator(hass, api, entry)
+        # Get scan interval from config (in hours), default to DEFAULT_SCAN_INTERVAL
+        scan_interval_hours = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        
+        coordinator = GrampsWebCoordinator(hass, api, entry, scan_interval_hours=scan_interval_hours)
 
         # Try initial refresh, but don't fail if it doesn't work
         try:
@@ -99,13 +102,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 class GrampsWebCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Gramps Web data."""
 
-    def __init__(self, hass: HomeAssistant, api, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, api, entry: ConfigEntry, scan_interval_hours: int = None) -> None:
         """Initialize."""
+        if scan_interval_hours is None:
+            scan_interval_hours = DEFAULT_SCAN_INTERVAL
+        
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL,
+            update_interval=timedelta(hours=scan_interval_hours),
         )
         self.api = api
         self.entry = entry

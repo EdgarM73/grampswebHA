@@ -218,3 +218,11 @@ For issues or questions, please create an issue on GitHub.
 ---
 
 [🇩🇪 Deutsche Version](README.md) | 🇬🇧 English Version
+
+## Calendar, "today" sensors and events
+
+- **Calendar** `calendar.gramps_calendar`: all birthdays, memorial days (optional) and wedding anniversaries (optional) in the HA calendar, for any date range. Round dates are marked with 🎉 (birthdays: every 10 years and the 18th, anniversaries: every 5 years, memorial days: every 10 years).
+- **Today sensors** `binary_sensor.gramps_birthday_today`, `..._memorial_day_today`, `..._anniversary_today`: on while there is a matching date today. Attributes: `count`, `names`, `milestones`.
+- **Next milestone** `sensor.gramps_next_milestone`: the next round birthday/anniversary within 12 months; attribute `upcoming` lists up to 10.
+- **Event** `gramps_ha_event`: fired every night after the refresh (00:05) for each date that is today. Data: `type` (`birthday`, `deathday`, `anniversary`), `person_name`, `years`, `milestone`. For a morning notification, use the "..._today" sensor with a time trigger.
+- List entries (birthdays, memorial days, anniversaries) carry an extra `milestone` field for round dates.

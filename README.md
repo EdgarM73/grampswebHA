@@ -206,3 +206,11 @@ Bei Problemen oder Fragen erstellen Sie bitte ein Issue auf GitHub.
 ---
 
 🇩🇪 Deutsche Version | [🇬🇧 English Version](README_EN.md)
+
+## Kalender, „Heute“-Sensoren und Events
+
+- **Kalender** `calendar.gramps_calendar`: alle Geburtstage, Gedenktage (optional) und Hochzeitstage (optional) im HA-Kalender, auch für beliebige Zeiträume. Runde Termine sind mit 🎉 markiert (Geburtstage: alle 10 Jahre und der 18., Hochzeitstage: alle 5 Jahre, Gedenktage: alle 10 Jahre).
+- **Heute-Sensoren** `binary_sensor.gramps_birthday_today`, `..._memorial_day_today`, `..._anniversary_today`: an, solange heute ein passender Termin ist. Attribute: `count`, `names`, `milestones`.
+- **Nächster Meilenstein** `sensor.gramps_next_milestone`: der nächste runde Geburtstag bzw. Hochzeitstag der nächsten 12 Monate, Attribut `upcoming` mit bis zu 10 Einträgen.
+- **Event** `gramps_ha_event`: wird jede Nacht nach der Aktualisierung (00:05 Uhr) für jeden heutigen Termin ausgelöst. Daten: `type` (`birthday`, `deathday`, `anniversary`), `person_name`, `years`, `milestone`. Für eine Nachricht am Morgen den Sensor „…\_today“ mit einem Zeit-Trigger verwenden.
+- In den Listen-Einträgen (Geburtstage, Gedenktage, Hochzeitstage) gibt es bei runden Terminen zusätzlich das Feld `milestone`.

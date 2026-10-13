@@ -92,6 +92,7 @@ async def async_setup_entry(
             sensors.append(GrampsWebNextAnniversaryLinkSensor(coordinator, entry, i))
 
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
+    sensors.append(GrampsWebNextMilestoneSensor(coordinator, entry))
 
     async_add_entities(sensors)
 
@@ -876,3 +877,45 @@ class GrampsWebNextAnniversaryLinkSensor(GrampsWebNextAnniversaryBase):
     @property
     def icon(self):
         return "mdi:link"
+
+
+class GrampsWebNextMilestoneSensor(CoordinatorEntity, SensorEntity):
+    """Next round birthday / anniversary (for gift planning)."""
+
+    _attr_icon = "mdi:party-popper"
+
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_name = "Gramps Next Milestone"
+        self._attr_unique_id = f"{entry.entry_id}_next_milestone"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)})
+
+    def _milestones(self) -> list[dict]:
+        return self.coordinator.hass.data.get(f"{DOMAIN}_milestones", {}).get(
+            self._entry.entry_id, []
+        )
+
+    @property
+    def native_value(self):
+        milestones = self._milestones()
+        if not milestones:
+            return None
+        first = milestones[0]
+        return f"{first['person_name']}: {first['label']}"
+
+    @property
+    def extra_state_attributes(self):
+        milestones = self._milestones()
+        if not milestones:
+            return {"upcoming": []}
+        first = milestones[0]
+        return {
+            "person_name": first["person_name"],
+            "label": first["label"],
+            "kind": first["kind"],
+            "date": first["date"],
+            "days_until": first["days_until"],
+            "years": first["years"],
+            "upcoming": milestones,
+        }

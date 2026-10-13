@@ -27,6 +27,50 @@ EVENT_KEYS = "handle,type,date"
 FAMILY_KEYS = "handle,father_handle,mother_handle,event_ref_list"
 
 
+ANNIVERSARY_NAMES = {
+    "de": {
+        25: "Silberhochzeit",
+        30: "Perlenhochzeit",
+        40: "Rubinhochzeit",
+        50: "Goldene Hochzeit",
+        60: "Diamantene Hochzeit",
+        65: "Eiserne Hochzeit",
+        70: "Gnadenhochzeit",
+    },
+    "en": {
+        25: "Silver wedding anniversary",
+        30: "Pearl wedding anniversary",
+        40: "Ruby wedding anniversary",
+        50: "Golden wedding anniversary",
+        60: "Diamond wedding anniversary",
+        65: "Sapphire wedding anniversary",
+        70: "Platinum wedding anniversary",
+    },
+}
+
+
+def milestone_label(kind: str, years: int, lang: str = "de") -> str | None:
+    """Return a label if `years` is a round number for this kind of date.
+
+    Birthdays: every 10th and the 18th. Anniversaries: every 5th year.
+    Deathdays: every 10th year.
+    """
+    if years is None or years <= 0:
+        return None
+    de = str(lang).lower().startswith("de")
+    if kind == "birthday" and (years % 10 == 0 or years == 18):
+        return f"{years}. Geburtstag" if de else f"{years}th birthday"
+    if kind == "anniversary" and years % 5 == 0:
+        names = ANNIVERSARY_NAMES["de" if de else "en"]
+        special = names.get(years)
+        if special:
+            return f"{special} ({years})"
+        return f"{years}. Hochzeitstag" if de else f"{years}th wedding anniversary"
+    if kind == "deathday" and years % 10 == 0:
+        return f"{years}. Todestag" if de else f"{years}th death anniversary"
+    return None
+
+
 class GrampsWebAPI:
     """Class to interact with Gramps Web API."""
 
@@ -36,8 +80,10 @@ class GrampsWebAPI:
         username: str = None,
         password: str = None,
         hass_config_path: str = None,
+        language: str = "de",
     ):
         """Initialize the API client."""
+        self.language = language or "de"
         self.url = url.rstrip("/")
         self.username = username
         self.password = password
@@ -287,18 +333,19 @@ class GrampsWebAPI:
         return None
 
     @staticmethod
-    def _next_occurrence(original: date, today: date) -> date:
-        """Next date >= today with the same month/day (Feb 29 -> Feb 28 in non-leap years)."""
+    def _date_in_year(original: date, year: int) -> date:
+        """Same month/day in `year` (Feb 29 -> Feb 28 in non-leap years)."""
+        day = original.day
+        if original.month == 2 and day == 29 and not calendar.isleap(year):
+            day = 28
+        return date(year, original.month, day)
 
-        def in_year(year: int) -> date:
-            day = original.day
-            if original.month == 2 and day == 29 and not calendar.isleap(year):
-                day = 28
-            return date(year, original.month, day)
-
-        candidate = in_year(today.year)
+    @classmethod
+    def _next_occurrence(cls, original: date, today: date) -> date:
+        """Next date >= today with the same month/day."""
+        candidate = cls._date_in_year(original, today.year)
         if candidate < today:
-            candidate = in_year(today.year + 1)
+            candidate = cls._date_in_year(original, today.year + 1)
         return candidate
 
     def _get_person_name(self, person: dict):
@@ -426,6 +473,9 @@ class GrampsWebAPI:
                     "age": next_birthday.year - birth_date.year,
                     "days_until": (next_birthday - today).days,
                 }
+                label = milestone_label("birthday", item["age"], self.language)
+                if label:
+                    item["milestone"] = label
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -472,6 +522,11 @@ class GrampsWebAPI:
                     "days_until": (next_deathday - today).days,
                     "person_handle": person.get("handle"),
                 }
+                label = milestone_label(
+                    "deathday", next_deathday.year - death_date.year, self.language
+                )
+                if label:
+                    item["milestone"] = label
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -539,6 +594,11 @@ class GrampsWebAPI:
                     "days_until": (next_anniv - today).days,
                     "family_handle": family_handle,
                 }
+                label = milestone_label(
+                    "anniversary", next_anniv.year - marriage_date.year, self.language
+                )
+                if label:
+                    item["milestone"] = label
                 for idx, partner in enumerate(partners[:2], start=1):
                     deceased = partner.get("death_ref_index", -1) != -1
                     item[f"person{idx}_deceased"] = deceased
@@ -553,3 +613,137 @@ class GrampsWebAPI:
         except Exception as err:
             _LOGGER.error("Failed to get anniversaries: %s", err, exc_info=True)
             return []
+
+    # ------------------------------------------------- calendar / milestones
+
+    def _snapshot_any_age(self) -> dict:
+        """Existing snapshot regardless of age (loads it if there is none yet)."""
+        snap = self._snapshot
+        return snap if snap is not None else self._load_snapshot()
+
+    def _date_sources(
+        self, snap: dict, include_deaths: bool, include_anniversaries: bool
+    ) -> list[dict]:
+        """All recurring dates as dicts: kind, date, name."""
+        events = snap["events"]
+        sources = []
+
+        for person in snap["people"]:
+            name = self._get_person_name(person)
+            if person.get("death_ref_index", -1) == -1:
+                born = self._person_event_date(person, events, "birth", "birth_ref_index")
+                if born:
+                    sources.append({"kind": "birthday", "date": born, "name": name})
+            elif include_deaths:
+                died = self._person_event_date(person, events, "death", "death_ref_index")
+                if died:
+                    sources.append({"kind": "deathday", "date": died, "name": name})
+
+        if include_anniversaries:
+            people = snap["people_by_handle"]
+            seen = set()
+            for family in snap["families"].values():
+                partners = [
+                    people[h]
+                    for h in (family.get("father_handle"), family.get("mother_handle"))
+                    if h and h in people
+                ]
+                if not partners:
+                    continue
+                name = " & ".join(sorted(self._get_person_name(p) for p in partners))
+                for ref in family.get("event_ref_list", []) or []:
+                    ev_handle = self._ref_handle(ref)
+                    event = events.get(ev_handle)
+                    if not event or ev_handle in seen:
+                        continue
+                    etype = self._event_type(event)
+                    if "marriage" not in etype and "engagement" not in etype:
+                        continue
+                    when = self._event_date(event)
+                    if when:
+                        seen.add(ev_handle)
+                        sources.append({"kind": "anniversary", "date": when, "name": name})
+        return sources
+
+    def _summary(self, kind: str, name: str, years: int, label: str | None) -> str:
+        """Short calendar title for one occurrence."""
+        de = str(self.language).lower().startswith("de")
+        if label:
+            return f"\U0001F389 {name} \u2013 {label}"
+        if kind == "birthday":
+            return f"\U0001F382 {name} ({years})"
+        if kind == "deathday":
+            suffix = f"{years}. Todestag" if de else f"{years}th death anniversary"
+            return f"\U0001F56F\uFE0F {name} ({suffix})"
+        suffix = f"{years}. Hochzeitstag" if de else f"{years}th wedding anniversary"
+        return f"\U0001F48D {name} ({suffix})"
+
+    def get_calendar_events(
+        self,
+        start: date,
+        end: date,
+        include_deaths: bool = True,
+        include_anniversaries: bool = True,
+    ) -> list[dict]:
+        """Every birthday/deathday/anniversary between `start` and `end` (inclusive)."""
+        try:
+            snap = self._snapshot_any_age()
+            result = []
+            for src in self._date_sources(snap, include_deaths, include_anniversaries):
+                orig = src["date"]
+                for year in range(start.year, end.year + 1):
+                    when = self._date_in_year(orig, year)
+                    years = year - orig.year
+                    if years < 1 or not (start <= when <= end):
+                        continue
+                    label = milestone_label(src["kind"], years, self.language)
+                    result.append(
+                        {
+                            "kind": src["kind"],
+                            "date": when,
+                            "name": src["name"],
+                            "years": years,
+                            "milestone": label,
+                            "summary": self._summary(
+                                src["kind"], src["name"], years, label
+                            ),
+                        }
+                    )
+            result.sort(key=lambda e: (e["date"], e["name"]))
+            return result
+        except Exception as err:
+            _LOGGER.error("Failed to build calendar events: %s", err, exc_info=True)
+            return []
+
+    def get_milestones(
+        self,
+        days: int = 365,
+        limit: int = 10,
+        include_deaths: bool = True,
+        include_anniversaries: bool = True,
+    ) -> list[dict]:
+        """Upcoming round birthdays/anniversaries within the next `days` days."""
+        today = date.today()
+        events = self.get_calendar_events(
+            today,
+            today + timedelta(days=days),
+            include_deaths,
+            include_anniversaries,
+        )
+        result = []
+        for e in events:
+            if not e["milestone"]:
+                continue
+            result.append(
+                {
+                    "kind": e["kind"],
+                    "person_name": e["name"],
+                    "date": e["date"].isoformat(),
+                    "days_until": (e["date"] - today).days,
+                    "years": e["years"],
+                    "label": e["milestone"],
+                }
+            )
+            if len(result) >= limit:
+                break
+        return result

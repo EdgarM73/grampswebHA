@@ -165,7 +165,7 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
             return
 
         today = date.today()
-        tomorrow = today.replace(day=today.day + 1) if today.day < 28 else date(today.year if today.month < 12 else today.year + 1, today.month if today.month < 12 else 1, 1)
+        tomorrow = today + timedelta(days=1)
         tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
         for person in current_birthdays:

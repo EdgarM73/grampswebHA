@@ -20,9 +20,27 @@ from .const import DOMAIN, CONF_URL, CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INT
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.CALENDAR, Platform.BINARY_SENSOR]
+
+EVENT_GRAMPS = f"{DOMAIN}_event"
 
 SCAN_INTERVAL = timedelta(hours=6)
+
+
+async def _async_owner_person_name(hass: HomeAssistant) -> str | None:
+    """Name of the HA person linked to the owner account (or the owner's name)."""
+    try:
+        users = await hass.auth.async_get_users()
+        owner = next((u for u in users if u.is_owner and u.is_active), None)
+        if owner is None:
+            return None
+        for state in hass.states.async_all("person"):
+            if state.attributes.get("user_id") == owner.id:
+                return state.attributes.get("friendly_name") or state.name
+        return owner.name
+    except Exception as err:  # never block setup because of this
+        _LOGGER.debug("Could not determine the owner person: %s", err)
+        return None
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -59,7 +77,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             username=username,
             password=password,
             hass_config_path=hass.config.config_dir,
+            language=hass.config.language,
         )
+        # Relationships are calculated from the HA owner's person if Gramps
+        # has exactly one person with that name.
+        api.main_person_name = await _async_owner_person_name(hass)
+        _LOGGER.debug("HA owner person name: %s", api.main_person_name)
 
         # Get scan interval from config (in hours), default to DEFAULT_SCAN_INTERVAL
         scan_interval_hours = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -83,6 +106,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.debug("Nightly refresh of Gramps data")
             await hass.async_add_executor_job(api.invalidate_cache)
             await coordinator.async_refresh()
+            coordinator.fire_today_events()
 
         entry.async_on_unload(
             async_track_time_change(hass, _nightly_refresh, hour=0, minute=5, second=0)
@@ -164,6 +188,30 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
             else:
                 _LOGGER.debug("Anniversaries disabled in config; skipping fetch")
             
+            # Round birthdays / anniversaries coming up in the next year
+            milestones = await self.hass.async_add_executor_job(
+                self.api.get_milestones,
+                365,
+                10,
+                self.entry.data.get("show_deathdays", False),
+                self.entry.data.get("show_anniversaries", False),
+            )
+            self.hass.data.setdefault(f"{DOMAIN}_milestones", {})[
+                self.entry.entry_id
+            ] = milestones or []
+
+            # "On this day" and tree statistics (served from the cached snapshot)
+            on_this_day = await self.hass.async_add_executor_job(
+                self.api.get_on_this_day
+            )
+            self.hass.data.setdefault(f"{DOMAIN}_on_this_day", {})[
+                self.entry.entry_id
+            ] = on_this_day or []
+            stats = await self.hass.async_add_executor_job(self.api.get_statistics)
+            self.hass.data.setdefault(f"{DOMAIN}_stats", {})[
+                self.entry.entry_id
+            ] = stats or {}
+
             # Store current list for next comparison
             self.last_birthdays = data or []
             
@@ -171,6 +219,45 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error("Error fetching data: %s", err, exc_info=True)
             raise UpdateFailed(f"Error communicating with API: {err}") from err
+
+    def fire_today_events(self) -> None:
+        """Fire a `gramps_ha_event` on the event bus for every entry that is today.
+
+        Meant to be called once per day right after the nightly refresh.
+        """
+        today = date.today().isoformat()
+        sources = (
+            ("birthday", self.data or [], "next_birthday", "age"),
+            (
+                "deathday",
+                self.hass.data.get(f"{DOMAIN}_deathdays", {}).get(self.entry.entry_id, []),
+                "next_deathday",
+                "years_ago",
+            ),
+            (
+                "anniversary",
+                self.hass.data.get(f"{DOMAIN}_anniversaries", {}).get(
+                    self.entry.entry_id, []
+                ),
+                "next_anniversary",
+                "years_together",
+            ),
+        )
+        for kind, items, date_key, years_key in sources:
+            for item in items:
+                if item.get(date_key) != today:
+                    continue
+                self.hass.bus.async_fire(
+                    EVENT_GRAMPS,
+                    {
+                        "entry_id": self.entry.entry_id,
+                        "type": kind,
+                        "person_name": item.get("person_name"),
+                        "years": item.get(years_key),
+                        "milestone": item.get("milestone"),
+                    },
+                )
+                _LOGGER.debug("Fired %s for %s", EVENT_GRAMPS, item.get("person_name"))
 
     async def _check_notifications(self, current_birthdays):
         """Send only one notification: always 1 day before the event."""

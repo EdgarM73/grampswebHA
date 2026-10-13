@@ -11,6 +11,8 @@ import hashlib
 import logging
 import os
 import threading
+import time
+from collections import Counter
 from datetime import date, datetime, timedelta
 
 import requests
@@ -20,11 +22,77 @@ _LOGGER = logging.getLogger(__name__)
 PAGE_SIZE = 1000
 
 PERSON_KEYS = (
-    "handle,primary_name,event_ref_list,birth_ref_index,death_ref_index,"
+    "handle,primary_name,gender,event_ref_list,birth_ref_index,death_ref_index,"
     "family_list,media_list"
 )
-EVENT_KEYS = "handle,type,date"
+EVENT_KEYS = "handle,type,date,description"
+RELATION_TTL_SECONDS = 7 * 24 * 3600
+RELATION_RETRY_SECONDS = 3600
+
+EVENT_TYPES_DE = {
+    "birth": "Geburt",
+    "death": "Tod",
+    "marriage": "Heirat",
+    "engagement": "Verlobung",
+    "divorce": "Scheidung",
+    "baptism": "Taufe",
+    "christening": "Taufe",
+    "burial": "Beerdigung",
+    "cremation": "Einäscherung",
+    "residence": "Wohnort",
+    "occupation": "Beruf",
+    "emigration": "Auswanderung",
+    "immigration": "Einwanderung",
+    "census": "Volkszählung",
+    "graduation": "Abschluss",
+    "education": "Ausbildung",
+    "retirement": "Ruhestand",
+}
 FAMILY_KEYS = "handle,father_handle,mother_handle,event_ref_list"
+
+
+ANNIVERSARY_NAMES = {
+    "de": {
+        25: "Silberhochzeit",
+        30: "Perlenhochzeit",
+        40: "Rubinhochzeit",
+        50: "Goldene Hochzeit",
+        60: "Diamantene Hochzeit",
+        65: "Eiserne Hochzeit",
+        70: "Gnadenhochzeit",
+    },
+    "en": {
+        25: "Silver wedding anniversary",
+        30: "Pearl wedding anniversary",
+        40: "Ruby wedding anniversary",
+        50: "Golden wedding anniversary",
+        60: "Diamond wedding anniversary",
+        65: "Sapphire wedding anniversary",
+        70: "Platinum wedding anniversary",
+    },
+}
+
+
+def milestone_label(kind: str, years: int, lang: str = "de") -> str | None:
+    """Return a label if `years` is a round number for this kind of date.
+
+    Birthdays: every 10th and the 18th. Anniversaries: every 5th year.
+    Deathdays: every 10th year.
+    """
+    if years is None or years <= 0:
+        return None
+    de = str(lang).lower().startswith("de")
+    if kind == "birthday" and (years % 10 == 0 or years == 18):
+        return f"{years}. Geburtstag" if de else f"{years}th birthday"
+    if kind == "anniversary" and years % 5 == 0:
+        names = ANNIVERSARY_NAMES["de" if de else "en"]
+        special = names.get(years)
+        if special:
+            return f"{special} ({years})"
+        return f"{years}. Hochzeitstag" if de else f"{years}th wedding anniversary"
+    if kind == "deathday" and years % 10 == 0:
+        return f"{years}. Todestag" if de else f"{years}th death anniversary"
+    return None
 
 
 class GrampsWebAPI:
@@ -36,8 +104,13 @@ class GrampsWebAPI:
         username: str = None,
         password: str = None,
         hass_config_path: str = None,
+        language: str = "de",
     ):
         """Initialize the API client."""
+        self.language = language or "de"
+        # Name of the person relationships are calculated from (e.g. the HA
+        # owner). Matched against Gramps; falls back to the Gramps home person.
+        self.main_person_name: str | None = None
         self.url = url.rstrip("/")
         self.username = username
         self.password = password
@@ -56,6 +129,8 @@ class GrampsWebAPI:
         self._snapshot_timestamp = None
         self._snapshot_loaded_at = None
         self._snapshot_lock = threading.Lock()
+        # handle -> (expires_at, relationship string or None)
+        self._relation_cache = {}
         self._cache_ttl_seconds = 3600  # Cache for 1 hour
 
     # ------------------------------------------------------------------ HTTP
@@ -85,7 +160,7 @@ class GrampsWebAPI:
             _LOGGER.warning("Failed to authenticate with Gramps Web: %s", err)
             return False
 
-    def _get(self, endpoint: str, params: dict = None):
+    def _get(self, endpoint: str, params: dict = None, quiet: bool = False):
         """Make a GET request to the API."""
         if not self.token and self.username:
             self._authenticate()
@@ -103,7 +178,12 @@ class GrampsWebAPI:
             response.raise_for_status()
             return response.json()
         except Exception as err:
-            _LOGGER.error("API request to %s failed: %s", endpoint, err, exc_info=True)
+            if quiet:
+                _LOGGER.debug("API request to %s failed: %s", endpoint, err)
+            else:
+                _LOGGER.error(
+                    "API request to %s failed: %s", endpoint, err, exc_info=True
+                )
             raise
 
     def _get_all(self, endpoint: str, keys: str) -> list[dict]:
@@ -162,7 +242,14 @@ class GrampsWebAPI:
                     return self._snapshot
                 raise
 
+            try:
+                # home person + object counts (best effort)
+                metadata = self._get("metadata/", quiet=True) or {}
+            except Exception:
+                metadata = {}
+
             snapshot = {
+                "metadata": metadata,
                 "people": people,
                 "events": {e["handle"]: e for e in events if e.get("handle")},
                 "families": {f["handle"]: f for f in families if f.get("handle")},
@@ -287,18 +374,19 @@ class GrampsWebAPI:
         return None
 
     @staticmethod
-    def _next_occurrence(original: date, today: date) -> date:
-        """Next date >= today with the same month/day (Feb 29 -> Feb 28 in non-leap years)."""
+    def _date_in_year(original: date, year: int) -> date:
+        """Same month/day in `year` (Feb 29 -> Feb 28 in non-leap years)."""
+        day = original.day
+        if original.month == 2 and day == 29 and not calendar.isleap(year):
+            day = 28
+        return date(year, original.month, day)
 
-        def in_year(year: int) -> date:
-            day = original.day
-            if original.month == 2 and day == 29 and not calendar.isleap(year):
-                day = 28
-            return date(year, original.month, day)
-
-        candidate = in_year(today.year)
+    @classmethod
+    def _next_occurrence(cls, original: date, today: date) -> date:
+        """Next date >= today with the same month/day."""
+        candidate = cls._date_in_year(original, today.year)
         if candidate < today:
-            candidate = in_year(today.year + 1)
+            candidate = cls._date_in_year(original, today.year + 1)
         return candidate
 
     def _get_person_name(self, person: dict):
@@ -426,6 +514,12 @@ class GrampsWebAPI:
                     "age": next_birthday.year - birth_date.year,
                     "days_until": (next_birthday - today).days,
                 }
+                label = milestone_label("birthday", item["age"], self.language)
+                if label:
+                    item["milestone"] = label
+                relationship = self._relationship(person.get("handle"))
+                if relationship:
+                    item["relationship"] = relationship
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -472,6 +566,14 @@ class GrampsWebAPI:
                     "days_until": (next_deathday - today).days,
                     "person_handle": person.get("handle"),
                 }
+                label = milestone_label(
+                    "deathday", next_deathday.year - death_date.year, self.language
+                )
+                if label:
+                    item["milestone"] = label
+                relationship = self._relationship(person.get("handle"))
+                if relationship:
+                    item["relationship"] = relationship
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -539,9 +641,17 @@ class GrampsWebAPI:
                     "days_until": (next_anniv - today).days,
                     "family_handle": family_handle,
                 }
+                label = milestone_label(
+                    "anniversary", next_anniv.year - marriage_date.year, self.language
+                )
+                if label:
+                    item["milestone"] = label
                 for idx, partner in enumerate(partners[:2], start=1):
                     deceased = partner.get("death_ref_index", -1) != -1
                     item[f"person{idx}_deceased"] = deceased
+                    relationship = self._relationship(partner.get("handle"))
+                    if relationship:
+                        item[f"relationship_person{idx}"] = relationship
                     image = self._get_person_image_url(partner, grayscale=deceased)
                     if image:
                         item[f"image_url_person{idx}"] = image
@@ -553,3 +663,382 @@ class GrampsWebAPI:
         except Exception as err:
             _LOGGER.error("Failed to get anniversaries: %s", err, exc_info=True)
             return []
+
+    # ------------------------------------------------- calendar / milestones
+
+    def _snapshot_any_age(self) -> dict:
+        """Existing snapshot regardless of age (loads it if there is none yet)."""
+        snap = self._snapshot
+        return snap if snap is not None else self._load_snapshot()
+
+    def _date_sources(
+        self, snap: dict, include_deaths: bool, include_anniversaries: bool
+    ) -> list[dict]:
+        """All recurring dates as dicts: kind, date, name."""
+        events = snap["events"]
+        sources = []
+
+        for person in snap["people"]:
+            name = self._get_person_name(person)
+            if person.get("death_ref_index", -1) == -1:
+                born = self._person_event_date(person, events, "birth", "birth_ref_index")
+                if born:
+                    sources.append({"kind": "birthday", "date": born, "name": name})
+            elif include_deaths:
+                died = self._person_event_date(person, events, "death", "death_ref_index")
+                if died:
+                    sources.append({"kind": "deathday", "date": died, "name": name})
+
+        if include_anniversaries:
+            people = snap["people_by_handle"]
+            seen = set()
+            for family in snap["families"].values():
+                partners = [
+                    people[h]
+                    for h in (family.get("father_handle"), family.get("mother_handle"))
+                    if h and h in people
+                ]
+                if not partners:
+                    continue
+                name = " & ".join(sorted(self._get_person_name(p) for p in partners))
+                for ref in family.get("event_ref_list", []) or []:
+                    ev_handle = self._ref_handle(ref)
+                    event = events.get(ev_handle)
+                    if not event or ev_handle in seen:
+                        continue
+                    etype = self._event_type(event)
+                    if "marriage" not in etype and "engagement" not in etype:
+                        continue
+                    when = self._event_date(event)
+                    if when:
+                        seen.add(ev_handle)
+                        sources.append({"kind": "anniversary", "date": when, "name": name})
+        return sources
+
+    def _summary(self, kind: str, name: str, years: int, label: str | None) -> str:
+        """Short calendar title for one occurrence."""
+        de = str(self.language).lower().startswith("de")
+        if label:
+            return f"\U0001F389 {name} \u2013 {label}"
+        if kind == "birthday":
+            return f"\U0001F382 {name} ({years})"
+        if kind == "deathday":
+            suffix = f"{years}. Todestag" if de else f"{years}th death anniversary"
+            return f"\U0001F56F\uFE0F {name} ({suffix})"
+        suffix = f"{years}. Hochzeitstag" if de else f"{years}th wedding anniversary"
+        return f"\U0001F48D {name} ({suffix})"
+
+    def get_calendar_events(
+        self,
+        start: date,
+        end: date,
+        include_deaths: bool = True,
+        include_anniversaries: bool = True,
+    ) -> list[dict]:
+        """Every birthday/deathday/anniversary between `start` and `end` (inclusive)."""
+        try:
+            snap = self._snapshot_any_age()
+            result = []
+            for src in self._date_sources(snap, include_deaths, include_anniversaries):
+                orig = src["date"]
+                for year in range(start.year, end.year + 1):
+                    when = self._date_in_year(orig, year)
+                    years = year - orig.year
+                    if years < 1 or not (start <= when <= end):
+                        continue
+                    label = milestone_label(src["kind"], years, self.language)
+                    result.append(
+                        {
+                            "kind": src["kind"],
+                            "date": when,
+                            "name": src["name"],
+                            "years": years,
+                            "milestone": label,
+                            "summary": self._summary(
+                                src["kind"], src["name"], years, label
+                            ),
+                        }
+                    )
+            result.sort(key=lambda e: (e["date"], e["name"]))
+            return result
+        except Exception as err:
+            _LOGGER.error("Failed to build calendar events: %s", err, exc_info=True)
+            return []
+
+    def get_milestones(
+        self,
+        days: int = 365,
+        limit: int = 10,
+        include_deaths: bool = True,
+        include_anniversaries: bool = True,
+    ) -> list[dict]:
+        """Upcoming round birthdays/anniversaries within the next `days` days."""
+        today = date.today()
+        events = self.get_calendar_events(
+            today,
+            today + timedelta(days=days),
+            include_deaths,
+            include_anniversaries,
+        )
+        result = []
+        for e in events:
+            if not e["milestone"]:
+                continue
+            result.append(
+                {
+                    "kind": e["kind"],
+                    "person_name": e["name"],
+                    "date": e["date"].isoformat(),
+                    "days_until": (e["date"] - today).days,
+                    "years": e["years"],
+                    "label": e["milestone"],
+                }
+            )
+            if len(result) >= limit:
+                break
+        return result
+
+    # ------------------------------------------------ relationship to home
+
+    @staticmethod
+    def _norm_name(name: str) -> str:
+        return " ".join(str(name).casefold().split())
+
+    def _find_person_by_name(self, snap: dict, name: str) -> str | None:
+        """Handle of the one person called `name` ("First Last" or "Last First")."""
+        target = self._norm_name(name)
+        if not target:
+            return None
+        matches = []
+        for person in snap.get("people", []):
+            primary = person.get("primary_name") or {}
+            first = primary.get("first_name", "")
+            surnames = [
+                s.get("surname", "") for s in primary.get("surname_list", []) or []
+            ]
+            candidates = set()
+            for surname in surnames:
+                candidates.add(self._norm_name(f"{first} {surname}"))
+                candidates.add(self._norm_name(f"{surname} {first}"))
+            if target in candidates and person.get("handle"):
+                matches.append(person["handle"])
+        # Ambiguous names must not guess
+        return matches[0] if len(matches) == 1 else None
+
+    def _main_person(self, snap: dict | None) -> tuple[str | None, str | None]:
+        """(handle, source) of the person relationships are calculated from.
+
+        source is "name" (matched `main_person_name`), "gramps" (Gramps home
+        person) or None.
+        """
+        snap = snap or {}
+        if self.main_person_name:
+            if "main_handle" not in snap:
+                snap["main_handle"] = self._find_person_by_name(
+                    snap, self.main_person_name
+                )
+                _LOGGER.info(
+                    "Main person '%s': %s",
+                    self.main_person_name,
+                    "found in Gramps" if snap["main_handle"] else "not found or ambiguous",
+                )
+            if snap["main_handle"]:
+                return snap["main_handle"], "name"
+        home = (snap.get("metadata") or {}).get("default_person")
+        return (home, "gramps") if home else (None, None)
+
+    def _relationship(self, handle: str | None) -> str | None:
+        """Relationship of `handle` to the Gramps home person (cached for a week).
+
+        Uses the home person configured in Gramps (`default_person`); returns
+        None if there is none, the person is the home person, or no
+        relationship exists.
+        """
+        home, _source = self._main_person(self._snapshot)
+        if not handle or not home or handle == home:
+            return None
+
+        cached = self._relation_cache.get(handle)
+        now = time.time()
+        if cached and cached[0] > now:
+            return cached[1]
+
+        lang = str(self.language).replace("_", "-").split("-")[0]
+        try:
+            data = self._get(
+                f"relations/{home}/{handle}", {"locale": lang}, quiet=True
+            )
+            value = str(data.get("relationship_string") or "").strip() or None
+            self._relation_cache[handle] = (now + RELATION_TTL_SECONDS, value)
+            return value
+        except Exception:
+            # Don't hammer the server: retry later
+            self._relation_cache[handle] = (now + RELATION_RETRY_SECONDS, None)
+            return None
+
+    # --------------------------------------------------------- on this day
+
+    @staticmethod
+    def _event_type_raw(event: dict) -> str:
+        etype = event.get("type", {})
+        return str(etype.get("string", "") if isinstance(etype, dict) else etype)
+
+    def get_on_this_day(self, limit: int = 20, today: date | None = None) -> list[dict]:
+        """Everything in the tree that happened on today's day and month."""
+        try:
+            snap = self._snapshot_any_age()
+            today = today or date.today()
+            de = str(self.language).lower().startswith("de")
+
+            owners: dict[str, list[str]] = {}
+            for person in snap["people"]:
+                name = self._get_person_name(person)
+                for ref in person.get("event_ref_list", []) or []:
+                    owners.setdefault(self._ref_handle(ref), []).append(name)
+            people = snap["people_by_handle"]
+            for family in snap["families"].values():
+                partners = [
+                    self._get_person_name(people[h])
+                    for h in (family.get("father_handle"), family.get("mother_handle"))
+                    if h and h in people
+                ]
+                if not partners:
+                    continue
+                for ref in family.get("event_ref_list", []) or []:
+                    owners.setdefault(self._ref_handle(ref), []).append(
+                        " & ".join(sorted(partners))
+                    )
+
+            result = []
+            for handle, event in snap["events"].items():
+                when = self._event_date(event)
+                if not when or self._date_in_year(when, today.year) != today:
+                    continue
+                years_ago = today.year - when.year
+                if years_ago < 1:
+                    continue
+                raw_type = self._event_type_raw(event)
+                type_label = (
+                    EVENT_TYPES_DE.get(raw_type.lower(), raw_type) if de else raw_type
+                )
+                names = sorted(set(owners.get(handle, [])))
+                ago = f"vor {years_ago} Jahren" if de else f"{years_ago} years ago"
+                text = f"{when.year} ({ago}): {type_label}"
+                if names:
+                    text += " \u2013 " + ", ".join(names)
+                result.append(
+                    {
+                        "year": when.year,
+                        "years_ago": years_ago,
+                        "type": type_label,
+                        "people": names,
+                        "description": event.get("description") or None,
+                        "text": text,
+                    }
+                )
+            result.sort(key=lambda e: (e["year"], e["text"]))
+            return result[:limit]
+        except Exception as err:
+            _LOGGER.error("Failed to build 'on this day': %s", err, exc_info=True)
+            return []
+
+    # ----------------------------------------------------------- statistics
+
+    def _main_person_info(self, snap: dict) -> dict | None:
+        """Name/source of the person used for relationships (for a sensor)."""
+        handle, source = self._main_person(snap)
+        person = snap.get("people_by_handle", {}).get(handle) if handle else None
+        if not person:
+            return None
+        return {
+            "name": self._get_person_name(person),
+            "source": source,
+            "handle": handle,
+        }
+
+    def get_statistics(self) -> dict:
+        """Counts and a few derived numbers about the whole tree."""
+        try:
+            snap = self._snapshot_any_age()
+            events = snap["events"]
+            counts = (snap.get("metadata") or {}).get("object_counts") or {}
+            today = date.today()
+
+            def age(born: date, ref: date) -> int:
+                return ref.year - born.year - ((ref.month, ref.day) < (born.month, born.day))
+
+            living = deceased = male = female = 0
+            no_birth = no_photo = 0
+            ages, spans = [], []
+            oldest = None
+            surnames: Counter = Counter()
+
+            for person in snap["people"]:
+                gender = person.get("gender")
+                if gender == 1:
+                    male += 1
+                elif gender == 0:
+                    female += 1
+                if not person.get("media_list"):
+                    no_photo += 1
+                surname_list = (person.get("primary_name") or {}).get("surname_list") or []
+                if surname_list and surname_list[0].get("surname"):
+                    surnames[surname_list[0]["surname"]] += 1
+
+                born = self._person_event_date(person, events, "birth", "birth_ref_index")
+                if not born:
+                    no_birth += 1
+                if person.get("death_ref_index", -1) == -1:
+                    living += 1
+                    if born:
+                        years = age(born, today)
+                        # ignore obviously incomplete data (no death recorded)
+                        if 0 <= years <= 110:
+                            ages.append(years)
+                            if oldest is None or years > oldest["age"]:
+                                oldest = {
+                                    "name": self._get_person_name(person),
+                                    "age": years,
+                                    "birth_date": born.isoformat(),
+                                }
+                else:
+                    deceased += 1
+                    died = self._person_event_date(
+                        person, events, "death", "death_ref_index"
+                    )
+                    if born and died:
+                        span = age(born, died)
+                        if 0 <= span <= 120:
+                            spans.append(span)
+
+            def avg(values):
+                return round(sum(values) / len(values), 1) if values else None
+
+            return {
+                "people": counts.get("people", len(snap["people"])),
+                "families": counts.get("families", len(snap["families"])),
+                "events": counts.get("events", len(events)),
+                "places": counts.get("places"),
+                "media": counts.get("media"),
+                "sources": counts.get("sources"),
+                "citations": counts.get("citations"),
+                "repositories": counts.get("repositories"),
+                "notes": counts.get("notes"),
+                "tags": counts.get("tags"),
+                "living": living,
+                "deceased": deceased,
+                "male": male,
+                "female": female,
+                "without_birth_date": no_birth,
+                "without_photo": no_photo,
+                "avg_age_living": avg(ages),
+                "avg_lifespan": avg(spans),
+                "oldest_living": oldest,
+                "main_person": self._main_person_info(snap),
+                "top_surnames": [
+                    {"surname": n, "count": c} for n, c in surnames.most_common(5)
+                ],
+            }
+        except Exception as err:
+            _LOGGER.error("Failed to build statistics: %s", err, exc_info=True)
+            return {}

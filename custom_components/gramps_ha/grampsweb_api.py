@@ -108,6 +108,9 @@ class GrampsWebAPI:
     ):
         """Initialize the API client."""
         self.language = language or "de"
+        # Name of the person relationships are calculated from (e.g. the HA
+        # owner). Matched against Gramps; falls back to the Gramps home person.
+        self.main_person_name: str | None = None
         self.url = url.rstrip("/")
         self.username = username
         self.password = password
@@ -797,6 +800,53 @@ class GrampsWebAPI:
 
     # ------------------------------------------------ relationship to home
 
+    @staticmethod
+    def _norm_name(name: str) -> str:
+        return " ".join(str(name).casefold().split())
+
+    def _find_person_by_name(self, snap: dict, name: str) -> str | None:
+        """Handle of the one person called `name` ("First Last" or "Last First")."""
+        target = self._norm_name(name)
+        if not target:
+            return None
+        matches = []
+        for person in snap.get("people", []):
+            primary = person.get("primary_name") or {}
+            first = primary.get("first_name", "")
+            surnames = [
+                s.get("surname", "") for s in primary.get("surname_list", []) or []
+            ]
+            candidates = set()
+            for surname in surnames:
+                candidates.add(self._norm_name(f"{first} {surname}"))
+                candidates.add(self._norm_name(f"{surname} {first}"))
+            if target in candidates and person.get("handle"):
+                matches.append(person["handle"])
+        # Ambiguous names must not guess
+        return matches[0] if len(matches) == 1 else None
+
+    def _main_person(self, snap: dict | None) -> tuple[str | None, str | None]:
+        """(handle, source) of the person relationships are calculated from.
+
+        source is "name" (matched `main_person_name`), "gramps" (Gramps home
+        person) or None.
+        """
+        snap = snap or {}
+        if self.main_person_name:
+            if "main_handle" not in snap:
+                snap["main_handle"] = self._find_person_by_name(
+                    snap, self.main_person_name
+                )
+                _LOGGER.info(
+                    "Main person '%s': %s",
+                    self.main_person_name,
+                    "found in Gramps" if snap["main_handle"] else "not found or ambiguous",
+                )
+            if snap["main_handle"]:
+                return snap["main_handle"], "name"
+        home = (snap.get("metadata") or {}).get("default_person")
+        return (home, "gramps") if home else (None, None)
+
     def _relationship(self, handle: str | None) -> str | None:
         """Relationship of `handle` to the Gramps home person (cached for a week).
 
@@ -804,8 +854,7 @@ class GrampsWebAPI:
         None if there is none, the person is the home person, or no
         relationship exists.
         """
-        snap = self._snapshot or {}
-        home = (snap.get("metadata") or {}).get("default_person")
+        home, _source = self._main_person(self._snapshot)
         if not handle or not home or handle == home:
             return None
 
@@ -895,6 +944,18 @@ class GrampsWebAPI:
 
     # ----------------------------------------------------------- statistics
 
+    def _main_person_info(self, snap: dict) -> dict | None:
+        """Name/source of the person used for relationships (for a sensor)."""
+        handle, source = self._main_person(snap)
+        person = snap.get("people_by_handle", {}).get(handle) if handle else None
+        if not person:
+            return None
+        return {
+            "name": self._get_person_name(person),
+            "source": source,
+            "handle": handle,
+        }
+
     def get_statistics(self) -> dict:
         """Counts and a few derived numbers about the whole tree."""
         try:
@@ -973,6 +1034,7 @@ class GrampsWebAPI:
                 "avg_age_living": avg(ages),
                 "avg_lifespan": avg(spans),
                 "oldest_living": oldest,
+                "main_person": self._main_person_info(snap),
                 "top_surnames": [
                     {"surname": n, "count": c} for n, c in surnames.most_common(5)
                 ],

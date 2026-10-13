@@ -27,6 +27,22 @@ EVENT_GRAMPS = f"{DOMAIN}_event"
 SCAN_INTERVAL = timedelta(hours=6)
 
 
+async def _async_owner_person_name(hass: HomeAssistant) -> str | None:
+    """Name of the HA person linked to the owner account (or the owner's name)."""
+    try:
+        users = await hass.auth.async_get_users()
+        owner = next((u for u in users if u.is_owner and u.is_active), None)
+        if owner is None:
+            return None
+        for state in hass.states.async_all("person"):
+            if state.attributes.get("user_id") == owner.id:
+                return state.attributes.get("friendly_name") or state.name
+        return owner.name
+    except Exception as err:  # never block setup because of this
+        _LOGGER.debug("Could not determine the owner person: %s", err)
+        return None
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Gramps HA from a config entry."""
     _LOGGER.info("Setting up Gramps HA integration")
@@ -63,6 +79,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass_config_path=hass.config.config_dir,
             language=hass.config.language,
         )
+        # Relationships are calculated from the HA owner's person if Gramps
+        # has exactly one person with that name.
+        api.main_person_name = await _async_owner_person_name(hass)
+        _LOGGER.debug("HA owner person name: %s", api.main_person_name)
 
         # Get scan interval from config (in hours), default to DEFAULT_SCAN_INTERVAL
         scan_interval_hours = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)

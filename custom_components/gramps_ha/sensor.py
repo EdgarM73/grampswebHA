@@ -1014,6 +1014,7 @@ STAT_SENSORS = (
     ("avg_lifespan", "Average Lifespan", "mdi:timeline-clock", "years", True),
     ("oldest_living", "Oldest Living Person", "mdi:human-cane", "years", True),
     ("top_surnames", "Most Common Surname", "mdi:card-account-details", None, True),
+    ("main_person", "Main Person", "mdi:account-star", None, True),
     ("sources", "Sources", "mdi:book-open-variant", None, False),
     ("citations", "Citations", "mdi:format-quote-close", None, False),
     ("repositories", "Repositories", "mdi:bank", None, False),
@@ -1048,7 +1049,7 @@ class GrampsWebStatSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_entity_registry_enabled_default = enabled_default
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)})
-        if key != "top_surnames":
+        if key not in ("top_surnames", "main_person"):
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
     def _stats(self) -> dict:
@@ -1063,6 +1064,8 @@ class GrampsWebStatSensor(CoordinatorEntity, SensorEntity):
             return value["age"] if value else None
         if self._key == "top_surnames":
             return value[0]["surname"] if value else None
+        if self._key == "main_person":
+            return value["name"] if value else None
         return value
 
     @property
@@ -1072,4 +1075,7 @@ class GrampsWebStatSensor(CoordinatorEntity, SensorEntity):
             return {"person_name": value["name"], "birth_date": value["birth_date"]}
         if self._key == "top_surnames" and value:
             return {"top": value}
+        if self._key == "main_person" and value:
+            # source: "name" = matched HA owner, "gramps" = Gramps home person
+            return {"source": value["source"], "person_handle": value["handle"]}
         return {}

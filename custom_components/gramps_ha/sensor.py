@@ -5,7 +5,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime, date
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -67,6 +71,7 @@ async def async_setup_entry(
         sensors.append(GrampsWebNextBirthdayDaysUntilSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayImageSensor(coordinator, entry, i))
         sensors.append(GrampsWebNextBirthdayLinkSensor(coordinator, entry, i))
+        sensors.append(GrampsWebNextBirthdayRelationshipSensor(coordinator, entry, i))
 
     # Deathday sensors (if enabled) - create as many as configured
     if show_deathdays:
@@ -78,6 +83,7 @@ async def async_setup_entry(
             sensors.append(GrampsWebNextDeathdayDaysUntilSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayImageSensor(coordinator, entry, i))
             sensors.append(GrampsWebNextDeathdayLinkSensor(coordinator, entry, i))
+            sensors.append(GrampsWebNextDeathdayRelationshipSensor(coordinator, entry, i))
 
     # Anniversary sensors (if enabled) - create as many as configured
     if show_anniversaries:
@@ -93,6 +99,10 @@ async def async_setup_entry(
 
     sensors.append(GrampsWebAllBirthdaysSensor(coordinator, entry))
     sensors.append(GrampsWebNextMilestoneSensor(coordinator, entry))
+    sensors.append(GrampsWebOnThisDaySensor(coordinator, entry))
+    sensors.extend(
+        GrampsWebStatSensor(coordinator, entry, *spec) for spec in STAT_SENSORS
+    )
 
     async_add_entities(sensors)
 
@@ -137,6 +147,7 @@ class GrampsWebNextBirthdayBase(CoordinatorEntity, SensorEntity):
             ATTR_DAYS_UNTIL: birthday.get("days_until"),
             "next_birthday": birthday.get("next_birthday"),
             "image_url": birthday.get("image_url"),
+            "relationship": birthday.get("relationship"),
         }
 
 
@@ -919,3 +930,146 @@ class GrampsWebNextMilestoneSensor(CoordinatorEntity, SensorEntity):
             "years": first["years"],
             "upcoming": milestones,
         }
+
+
+class GrampsWebNextBirthdayRelationshipSensor(GrampsWebNextBirthdayBase):
+    """Relationship of the next birthday person to the Gramps home person."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Birthday {index + 1} Relationship"
+        self._attr_unique_id = f"{entry.entry_id}_birthday_{index}_relationship"
+
+    @property
+    def native_value(self):
+        birthday = self._get_birthday()
+        return birthday.get("relationship") if birthday else None
+
+    @property
+    def icon(self):
+        return "mdi:family-tree"
+
+
+class GrampsWebNextDeathdayRelationshipSensor(GrampsWebNextDeathdayBase):
+    """Relationship of the next memorial-day person to the Gramps home person."""
+
+    def __init__(self, coordinator, entry: ConfigEntry, index: int) -> None:
+        super().__init__(coordinator, entry, index)
+        self._attr_name = f"Next Deathday {index + 1} Relationship"
+        self._attr_unique_id = f"{entry.entry_id}_deathday_{index}_relationship"
+
+    @property
+    def native_value(self):
+        deathdays = self.coordinator.hass.data.get(f"{DOMAIN}_deathdays", {})
+        items = deathdays.get(self._entry.entry_id, [])
+        if self._index >= len(items):
+            return None
+        return items[self._index].get("relationship")
+
+    @property
+    def icon(self):
+        return "mdi:family-tree"
+
+
+class GrampsWebOnThisDaySensor(CoordinatorEntity, SensorEntity):
+    """Everything in the tree that happened on today's day and month."""
+
+    _attr_icon = "mdi:calendar-today"
+
+    def __init__(self, coordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_name = "Gramps On This Day"
+        self._attr_unique_id = f"{entry.entry_id}_on_this_day"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)})
+
+    def _items(self) -> list[dict]:
+        return self.coordinator.hass.data.get(f"{DOMAIN}_on_this_day", {}).get(
+            self._entry.entry_id, []
+        )
+
+    @property
+    def native_value(self):
+        return len(self._items())
+
+    @property
+    def extra_state_attributes(self):
+        items = self._items()
+        return {
+            "events": items,
+            "text": "\n".join(i["text"] for i in items),
+        }
+
+
+# key, name, icon, unit, enabled by default
+STAT_SENSORS = (
+    ("people", "People", "mdi:account-group", None, True),
+    ("families", "Families", "mdi:human-male-female-child", None, True),
+    ("events", "Events", "mdi:calendar-star", None, True),
+    ("places", "Places", "mdi:map-marker", None, True),
+    ("media", "Media", "mdi:image-multiple", None, True),
+    ("living", "Living People", "mdi:account-heart", None, True),
+    ("deceased", "Deceased People", "mdi:candle", None, True),
+    ("avg_age_living", "Average Age (Living)", "mdi:cake-variant", "years", True),
+    ("avg_lifespan", "Average Lifespan", "mdi:timeline-clock", "years", True),
+    ("oldest_living", "Oldest Living Person", "mdi:human-cane", "years", True),
+    ("top_surnames", "Most Common Surname", "mdi:card-account-details", None, True),
+    ("sources", "Sources", "mdi:book-open-variant", None, False),
+    ("citations", "Citations", "mdi:format-quote-close", None, False),
+    ("repositories", "Repositories", "mdi:bank", None, False),
+    ("notes", "Notes", "mdi:note-text", None, False),
+    ("tags", "Tags", "mdi:tag-multiple", None, False),
+    ("male", "Male People", "mdi:gender-male", None, False),
+    ("female", "Female People", "mdi:gender-female", None, False),
+    ("without_birth_date", "People Without Birth Date", "mdi:calendar-question", None, False),
+    ("without_photo", "People Without Photo", "mdi:image-off", None, False),
+)
+
+
+class GrampsWebStatSensor(CoordinatorEntity, SensorEntity):
+    """One statistic about the whole Gramps tree."""
+
+    def __init__(
+        self,
+        coordinator,
+        entry: ConfigEntry,
+        key: str,
+        name: str,
+        icon: str,
+        unit: str | None,
+        enabled_default: bool,
+    ) -> None:
+        super().__init__(coordinator)
+        self._entry = entry
+        self._key = key
+        self._attr_name = f"Gramps Statistics {name}"
+        self._attr_icon = icon
+        self._attr_unique_id = f"{entry.entry_id}_stat_{key}"
+        self._attr_native_unit_of_measurement = unit
+        self._attr_entity_registry_enabled_default = enabled_default
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)})
+        if key != "top_surnames":
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+
+    def _stats(self) -> dict:
+        return self.coordinator.hass.data.get(f"{DOMAIN}_stats", {}).get(
+            self._entry.entry_id, {}
+        )
+
+    @property
+    def native_value(self):
+        value = self._stats().get(self._key)
+        if self._key == "oldest_living":
+            return value["age"] if value else None
+        if self._key == "top_surnames":
+            return value[0]["surname"] if value else None
+        return value
+
+    @property
+    def extra_state_attributes(self):
+        value = self._stats().get(self._key)
+        if self._key == "oldest_living" and value:
+            return {"person_name": value["name"], "birth_date": value["birth_date"]}
+        if self._key == "top_surnames" and value:
+            return {"top": value}
+        return {}

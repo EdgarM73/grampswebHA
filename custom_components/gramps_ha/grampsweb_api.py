@@ -11,6 +11,8 @@ import hashlib
 import logging
 import os
 import threading
+import time
+from collections import Counter
 from datetime import date, datetime, timedelta
 
 import requests
@@ -20,10 +22,32 @@ _LOGGER = logging.getLogger(__name__)
 PAGE_SIZE = 1000
 
 PERSON_KEYS = (
-    "handle,primary_name,event_ref_list,birth_ref_index,death_ref_index,"
+    "handle,primary_name,gender,event_ref_list,birth_ref_index,death_ref_index,"
     "family_list,media_list"
 )
-EVENT_KEYS = "handle,type,date"
+EVENT_KEYS = "handle,type,date,description"
+RELATION_TTL_SECONDS = 7 * 24 * 3600
+RELATION_RETRY_SECONDS = 3600
+
+EVENT_TYPES_DE = {
+    "birth": "Geburt",
+    "death": "Tod",
+    "marriage": "Heirat",
+    "engagement": "Verlobung",
+    "divorce": "Scheidung",
+    "baptism": "Taufe",
+    "christening": "Taufe",
+    "burial": "Beerdigung",
+    "cremation": "Einäscherung",
+    "residence": "Wohnort",
+    "occupation": "Beruf",
+    "emigration": "Auswanderung",
+    "immigration": "Einwanderung",
+    "census": "Volkszählung",
+    "graduation": "Abschluss",
+    "education": "Ausbildung",
+    "retirement": "Ruhestand",
+}
 FAMILY_KEYS = "handle,father_handle,mother_handle,event_ref_list"
 
 
@@ -102,6 +126,8 @@ class GrampsWebAPI:
         self._snapshot_timestamp = None
         self._snapshot_loaded_at = None
         self._snapshot_lock = threading.Lock()
+        # handle -> (expires_at, relationship string or None)
+        self._relation_cache = {}
         self._cache_ttl_seconds = 3600  # Cache for 1 hour
 
     # ------------------------------------------------------------------ HTTP
@@ -131,7 +157,7 @@ class GrampsWebAPI:
             _LOGGER.warning("Failed to authenticate with Gramps Web: %s", err)
             return False
 
-    def _get(self, endpoint: str, params: dict = None):
+    def _get(self, endpoint: str, params: dict = None, quiet: bool = False):
         """Make a GET request to the API."""
         if not self.token and self.username:
             self._authenticate()
@@ -149,7 +175,12 @@ class GrampsWebAPI:
             response.raise_for_status()
             return response.json()
         except Exception as err:
-            _LOGGER.error("API request to %s failed: %s", endpoint, err, exc_info=True)
+            if quiet:
+                _LOGGER.debug("API request to %s failed: %s", endpoint, err)
+            else:
+                _LOGGER.error(
+                    "API request to %s failed: %s", endpoint, err, exc_info=True
+                )
             raise
 
     def _get_all(self, endpoint: str, keys: str) -> list[dict]:
@@ -208,7 +239,14 @@ class GrampsWebAPI:
                     return self._snapshot
                 raise
 
+            try:
+                # home person + object counts (best effort)
+                metadata = self._get("metadata/", quiet=True) or {}
+            except Exception:
+                metadata = {}
+
             snapshot = {
+                "metadata": metadata,
                 "people": people,
                 "events": {e["handle"]: e for e in events if e.get("handle")},
                 "families": {f["handle"]: f for f in families if f.get("handle")},
@@ -476,6 +514,9 @@ class GrampsWebAPI:
                 label = milestone_label("birthday", item["age"], self.language)
                 if label:
                     item["milestone"] = label
+                relationship = self._relationship(person.get("handle"))
+                if relationship:
+                    item["relationship"] = relationship
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -527,6 +568,9 @@ class GrampsWebAPI:
                 )
                 if label:
                     item["milestone"] = label
+                relationship = self._relationship(person.get("handle"))
+                if relationship:
+                    item["relationship"] = relationship
                 image_url = self._get_person_image_url(person)
                 if image_url:
                     item["image_url"] = image_url
@@ -602,6 +646,9 @@ class GrampsWebAPI:
                 for idx, partner in enumerate(partners[:2], start=1):
                     deceased = partner.get("death_ref_index", -1) != -1
                     item[f"person{idx}_deceased"] = deceased
+                    relationship = self._relationship(partner.get("handle"))
+                    if relationship:
+                        item[f"relationship_person{idx}"] = relationship
                     image = self._get_person_image_url(partner, grayscale=deceased)
                     if image:
                         item[f"image_url_person{idx}"] = image
@@ -747,3 +794,189 @@ class GrampsWebAPI:
             if len(result) >= limit:
                 break
         return result
+
+    # ------------------------------------------------ relationship to home
+
+    def _relationship(self, handle: str | None) -> str | None:
+        """Relationship of `handle` to the Gramps home person (cached for a week).
+
+        Uses the home person configured in Gramps (`default_person`); returns
+        None if there is none, the person is the home person, or no
+        relationship exists.
+        """
+        snap = self._snapshot or {}
+        home = (snap.get("metadata") or {}).get("default_person")
+        if not handle or not home or handle == home:
+            return None
+
+        cached = self._relation_cache.get(handle)
+        now = time.time()
+        if cached and cached[0] > now:
+            return cached[1]
+
+        lang = str(self.language).replace("_", "-").split("-")[0]
+        try:
+            data = self._get(
+                f"relations/{home}/{handle}", {"locale": lang}, quiet=True
+            )
+            value = str(data.get("relationship_string") or "").strip() or None
+            self._relation_cache[handle] = (now + RELATION_TTL_SECONDS, value)
+            return value
+        except Exception:
+            # Don't hammer the server: retry later
+            self._relation_cache[handle] = (now + RELATION_RETRY_SECONDS, None)
+            return None
+
+    # --------------------------------------------------------- on this day
+
+    @staticmethod
+    def _event_type_raw(event: dict) -> str:
+        etype = event.get("type", {})
+        return str(etype.get("string", "") if isinstance(etype, dict) else etype)
+
+    def get_on_this_day(self, limit: int = 20, today: date | None = None) -> list[dict]:
+        """Everything in the tree that happened on today's day and month."""
+        try:
+            snap = self._snapshot_any_age()
+            today = today or date.today()
+            de = str(self.language).lower().startswith("de")
+
+            owners: dict[str, list[str]] = {}
+            for person in snap["people"]:
+                name = self._get_person_name(person)
+                for ref in person.get("event_ref_list", []) or []:
+                    owners.setdefault(self._ref_handle(ref), []).append(name)
+            people = snap["people_by_handle"]
+            for family in snap["families"].values():
+                partners = [
+                    self._get_person_name(people[h])
+                    for h in (family.get("father_handle"), family.get("mother_handle"))
+                    if h and h in people
+                ]
+                if not partners:
+                    continue
+                for ref in family.get("event_ref_list", []) or []:
+                    owners.setdefault(self._ref_handle(ref), []).append(
+                        " & ".join(sorted(partners))
+                    )
+
+            result = []
+            for handle, event in snap["events"].items():
+                when = self._event_date(event)
+                if not when or self._date_in_year(when, today.year) != today:
+                    continue
+                years_ago = today.year - when.year
+                if years_ago < 1:
+                    continue
+                raw_type = self._event_type_raw(event)
+                type_label = (
+                    EVENT_TYPES_DE.get(raw_type.lower(), raw_type) if de else raw_type
+                )
+                names = sorted(set(owners.get(handle, [])))
+                ago = f"vor {years_ago} Jahren" if de else f"{years_ago} years ago"
+                text = f"{when.year} ({ago}): {type_label}"
+                if names:
+                    text += " \u2013 " + ", ".join(names)
+                result.append(
+                    {
+                        "year": when.year,
+                        "years_ago": years_ago,
+                        "type": type_label,
+                        "people": names,
+                        "description": event.get("description") or None,
+                        "text": text,
+                    }
+                )
+            result.sort(key=lambda e: (e["year"], e["text"]))
+            return result[:limit]
+        except Exception as err:
+            _LOGGER.error("Failed to build 'on this day': %s", err, exc_info=True)
+            return []
+
+    # ----------------------------------------------------------- statistics
+
+    def get_statistics(self) -> dict:
+        """Counts and a few derived numbers about the whole tree."""
+        try:
+            snap = self._snapshot_any_age()
+            events = snap["events"]
+            counts = (snap.get("metadata") or {}).get("object_counts") or {}
+            today = date.today()
+
+            def age(born: date, ref: date) -> int:
+                return ref.year - born.year - ((ref.month, ref.day) < (born.month, born.day))
+
+            living = deceased = male = female = 0
+            no_birth = no_photo = 0
+            ages, spans = [], []
+            oldest = None
+            surnames: Counter = Counter()
+
+            for person in snap["people"]:
+                gender = person.get("gender")
+                if gender == 1:
+                    male += 1
+                elif gender == 0:
+                    female += 1
+                if not person.get("media_list"):
+                    no_photo += 1
+                surname_list = (person.get("primary_name") or {}).get("surname_list") or []
+                if surname_list and surname_list[0].get("surname"):
+                    surnames[surname_list[0]["surname"]] += 1
+
+                born = self._person_event_date(person, events, "birth", "birth_ref_index")
+                if not born:
+                    no_birth += 1
+                if person.get("death_ref_index", -1) == -1:
+                    living += 1
+                    if born:
+                        years = age(born, today)
+                        # ignore obviously incomplete data (no death recorded)
+                        if 0 <= years <= 110:
+                            ages.append(years)
+                            if oldest is None or years > oldest["age"]:
+                                oldest = {
+                                    "name": self._get_person_name(person),
+                                    "age": years,
+                                    "birth_date": born.isoformat(),
+                                }
+                else:
+                    deceased += 1
+                    died = self._person_event_date(
+                        person, events, "death", "death_ref_index"
+                    )
+                    if born and died:
+                        span = age(born, died)
+                        if 0 <= span <= 120:
+                            spans.append(span)
+
+            def avg(values):
+                return round(sum(values) / len(values), 1) if values else None
+
+            return {
+                "people": counts.get("people", len(snap["people"])),
+                "families": counts.get("families", len(snap["families"])),
+                "events": counts.get("events", len(events)),
+                "places": counts.get("places"),
+                "media": counts.get("media"),
+                "sources": counts.get("sources"),
+                "citations": counts.get("citations"),
+                "repositories": counts.get("repositories"),
+                "notes": counts.get("notes"),
+                "tags": counts.get("tags"),
+                "living": living,
+                "deceased": deceased,
+                "male": male,
+                "female": female,
+                "without_birth_date": no_birth,
+                "without_photo": no_photo,
+                "avg_age_living": avg(ages),
+                "avg_lifespan": avg(spans),
+                "oldest_living": oldest,
+                "top_surnames": [
+                    {"surname": n, "count": c} for n, c in surnames.most_common(5)
+                ],
+            }
+        except Exception as err:
+            _LOGGER.error("Failed to build statistics: %s", err, exc_info=True)
+            return {}

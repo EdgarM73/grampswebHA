@@ -180,6 +180,18 @@ class GrampsWebCoordinator(DataUpdateCoordinator):
                 self.entry.entry_id
             ] = milestones or []
 
+            # "On this day" and tree statistics (served from the cached snapshot)
+            on_this_day = await self.hass.async_add_executor_job(
+                self.api.get_on_this_day
+            )
+            self.hass.data.setdefault(f"{DOMAIN}_on_this_day", {})[
+                self.entry.entry_id
+            ] = on_this_day or []
+            stats = await self.hass.async_add_executor_job(self.api.get_statistics)
+            self.hass.data.setdefault(f"{DOMAIN}_stats", {})[
+                self.entry.entry_id
+            ] = stats or {}
+
             # Store current list for next comparison
             self.last_birthdays = data or []
             

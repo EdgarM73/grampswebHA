@@ -214,3 +214,9 @@ Bei Problemen oder Fragen erstellen Sie bitte ein Issue auf GitHub.
 - **Nächster Meilenstein** `sensor.gramps_next_milestone`: der nächste runde Geburtstag bzw. Hochzeitstag der nächsten 12 Monate, Attribut `upcoming` mit bis zu 10 Einträgen.
 - **Event** `gramps_ha_event`: wird jede Nacht nach der Aktualisierung (00:05 Uhr) für jeden heutigen Termin ausgelöst. Daten: `type` (`birthday`, `deathday`, `anniversary`), `person_name`, `years`, `milestone`. Für eine Nachricht am Morgen den Sensor „…\_today“ mit einem Zeit-Trigger verwenden.
 - In den Listen-Einträgen (Geburtstage, Gedenktage, Hochzeitstage) gibt es bei runden Terminen zusätzlich das Feld `milestone`.
+
+## Verwandtschaftsgrad, „An diesem Tag“ und Statistik
+
+- **Verwandtschaftsgrad:** Als Bezugsperson dient die in Gramps eingestellte *Home-Person* (keine Einstellung in HA nötig). Bei Geburtstagen und Gedenktagen steht der Grad (z. B. „Cousine“) im Feld `relationship`, bei Hochzeitstagen in `relationship_person1/2`. Dazu gibt es die Sensoren `Next Birthday N Relationship` und `Next Deathday N Relationship`. Die Werte werden bis zu 7 Tage zwischengespeichert. Ist in Gramps keine Home-Person gesetzt, bleibt das Feld leer.
+- **An diesem Tag** `sensor.gramps_on_this_day`: Anzahl aller Ereignisse im Stammbaum, die heute auf Tag und Monat fallen (Geburten, Hochzeiten, Todesfälle, Taufen usw.). Attribut `events` (Liste) und `text` (fertiger Mehrzeilentext für Benachrichtigungen).
+- **Statistik** `sensor.gramps_statistics_*`: Personen, Familien, Ereignisse, Orte, Medien, lebende/verstorbene Personen, Durchschnittsalter, durchschnittliche Lebensdauer, älteste lebende Person und häufigster Nachname (Attribut `top`). Weitere Zähler (Quellen, Zitate, Archive, Notizen, Tags, männlich/weiblich, Personen ohne Geburtsdatum bzw. Foto) sind standardmäßig deaktiviert und lassen sich in den Entitäten aktivieren. Die Altersberechnung ignoriert Personen ohne Sterbeeintrag, die älter als 110 Jahre wären.

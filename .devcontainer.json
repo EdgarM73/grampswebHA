@@ -1,5 +1,5 @@
 {
-    "name": "EdgarM73/grampswebDates",
+    "name": "EdgarM73/grampswebHA",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "scripts/setup",
     "forwardPorts": [

@@ -9,7 +9,11 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.device_registry import DeviceInfo, DeviceEntryType
+from homeassistant.helpers.device_registry import (
+    DeviceInfo,
+    DeviceEntryType,
+    async_get as async_get_device_registry,
+)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -28,6 +32,14 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _via_device(hass: HomeAssistant, entry: ConfigEntry) -> dict:
+    """Return the via_device_id kwarg linking to the main Gramps HA device."""
+    parent = async_get_device_registry(hass).async_get_device(
+        identifiers={(DOMAIN, entry.entry_id)}
+    )
+    return {"via_device_id": parent.id} if parent else {}
 
 
 async def async_setup_entry(
@@ -109,7 +121,7 @@ class GrampsWebNextBirthdayBase(CoordinatorEntity, SensorEntity):
             model="Birthdays",
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=config_url,
-            via_device=(DOMAIN, self._entry.entry_id),
+            **_via_device(self.hass, self._entry),
         )
 
     @property
@@ -388,7 +400,7 @@ class GrampsWebNextDeathdayBase(CoordinatorEntity, SensorEntity):
             model="Deathdays",
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=config_url,
-            via_device=(DOMAIN, self._entry.entry_id),
+            **_via_device(self.hass, self._entry),
         )
 
 
@@ -410,7 +422,7 @@ class GrampsWebNextAnniversaryBase(CoordinatorEntity, SensorEntity):
             model="Anniversaries",
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=config_url,
-            via_device=(DOMAIN, self._entry.entry_id),
+            **_via_device(self.hass, self._entry),
         )
 
 

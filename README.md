@@ -32,7 +32,7 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 1. Öffnen Sie HACS in Home Assistant
 2. Klicken Sie auf die drei Punkte (⋮) oben rechts
 3. Wählen Sie **Benutzerdefinierte Repositorys**
-4. Fügen Sie die Repository-URL hinzu: `https://github.com/EdgarM73/grampswebDates`
+4. Fügen Sie die Repository-URL hinzu: `https://github.com/EdgarM73/grampswebHA`
 5. Wählen Sie Kategorie: **Integration**
 6. Klicken Sie auf **Hinzufügen**
 7. Suchen Sie nach "Gramps HA" und installieren Sie es
@@ -40,7 +40,7 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 
 ### Manuelle Installation
 
-1. Laden Sie die neueste Version von [GitHub](https://github.com/EdgarM73/grampswebDates/releases) herunter
+1. Laden Sie die neueste Version von [GitHub](https://github.com/EdgarM73/grampswebHA/releases) herunter
 2. Entpacken Sie das Archiv
 3. Kopieren Sie den Ordner `custom_components/gramps_ha` in Ihr `<config>/custom_components/` Verzeichnis
 4. Starten Sie Home Assistant neu
@@ -49,7 +49,7 @@ und wenn man schon einen Stammbaum hat, kann man auch die Familien Geburtstage a
 
 ```bash
 cd /config/custom_components
-git clone https://github.com/EdgarM73/grampswebDates.git temp
+git clone https://github.com/EdgarM73/grampswebHA.git temp
 mv temp/custom_components/gramps_ha ./
 rm -rf temp
 ```

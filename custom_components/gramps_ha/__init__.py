@@ -12,6 +12,7 @@ from homeassistant.helpers.device_registry import (
     DeviceEntryType,
     DeviceInfo,
 )
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.components import persistent_notification
 
@@ -74,6 +75,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Don't fail setup, just log the warning
 
         hass.data[DOMAIN][entry.entry_id] = coordinator
+
+        # Refresh every night: the list is relative to "today" (days_until,
+        # next date, ordering), so it goes stale after a day even if the
+        # configured scan interval is much longer.
+        async def _nightly_refresh(_now) -> None:
+            _LOGGER.debug("Nightly refresh of Gramps data")
+            await hass.async_add_executor_job(api.invalidate_cache)
+            await coordinator.async_refresh()
+
+        entry.async_on_unload(
+            async_track_time_change(hass, _nightly_refresh, hour=0, minute=5, second=0)
+        )
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

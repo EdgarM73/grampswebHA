@@ -11,7 +11,7 @@ import hashlib
 import logging
 import os
 import threading
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import requests
 
@@ -54,6 +54,7 @@ class GrampsWebAPI:
         # get_* methods so a coordinator refresh loads the database only once.
         self._snapshot = None
         self._snapshot_timestamp = None
+        self._snapshot_loaded_at = None
         self._snapshot_lock = threading.Lock()
         self._cache_ttl_seconds = 3600  # Cache for 1 hour
 
@@ -141,9 +142,25 @@ class GrampsWebAPI:
 
             _LOGGER.info("Loading Gramps Web data (bulk)")
             start = datetime.now()
-            people = self._get_all("people/", PERSON_KEYS)
-            events = self._get_all("events/", EVENT_KEYS)
-            families = self._get_all("families/", FAMILY_KEYS)
+            try:
+                people = self._get_all("people/", PERSON_KEYS)
+                events = self._get_all("events/", EVENT_KEYS)
+                families = self._get_all("families/", FAMILY_KEYS)
+            except Exception as err:
+                if self._snapshot is not None:
+                    # Server unreachable/token problem: keep showing the last
+                    # known data instead of blanking the sensors.
+                    _LOGGER.warning(
+                        "Could not refresh Gramps Web data, using data from %s: %s",
+                        self._snapshot_loaded_at,
+                        err,
+                    )
+                    # Retry in ~5 minutes rather than on every call
+                    self._snapshot_timestamp = datetime.now() - timedelta(
+                        seconds=self._cache_ttl_seconds - 300
+                    )
+                    return self._snapshot
+                raise
 
             snapshot = {
                 "people": people,
@@ -152,7 +169,7 @@ class GrampsWebAPI:
                 "people_by_handle": {p["handle"]: p for p in people if p.get("handle")},
             }
             self._snapshot = snapshot
-            self._snapshot_timestamp = datetime.now()
+            self._snapshot_timestamp = self._snapshot_loaded_at = datetime.now()
             _LOGGER.info(
                 "Loaded %s people, %s events, %s families in %.1fs",
                 len(people),
@@ -161,6 +178,11 @@ class GrampsWebAPI:
                 (datetime.now() - start).total_seconds(),
             )
             return snapshot
+
+    def invalidate_cache(self) -> None:
+        """Force the next call to reload data from the server."""
+        with self._snapshot_lock:
+            self._snapshot_timestamp = None
 
     def get_people(self):
         """Get all people (bulk, cached)."""

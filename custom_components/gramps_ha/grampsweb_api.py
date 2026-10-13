@@ -317,8 +317,10 @@ class GrampsWebAPI:
         except Exception:
             return "Unknown"
 
-    def _get_person_image_url(self, person: dict) -> str | None:
-        """Get the URL for a person's profile image."""
+    def _get_person_image_url(
+        self, person: dict, grayscale: bool = False
+    ) -> str | None:
+        """Get the URL for a person's profile image (optionally in grayscale)."""
         try:
             person_handle = person.get("handle", "")
             if not person_handle:
@@ -335,7 +337,9 @@ class GrampsWebAPI:
             thumbnail_url = f"{self.url}/api/media/{media_handle}/thumbnail/200"
 
             if self.hass_config_path:
-                return self._download_image(thumbnail_url, person_handle, media_handle)
+                return self._download_image(
+                    thumbnail_url, person_handle, media_handle, grayscale
+                )
 
             return thumbnail_url
 
@@ -344,9 +348,13 @@ class GrampsWebAPI:
             return None
 
     def _download_image(
-        self, image_url: str, person_handle: str, media_handle: str
+        self,
+        image_url: str,
+        person_handle: str,
+        media_handle: str,
+        grayscale: bool = False,
     ) -> str | None:
-        """Download image and return local path."""
+        """Download image and return local path (grayscale copy if requested)."""
         try:
             filename_hash = hashlib.md5(
                 f"{person_handle}_{media_handle}".encode()
@@ -354,17 +362,32 @@ class GrampsWebAPI:
             filename = f"{filename_hash}.jpg"
             filepath = os.path.join(self.images_dir, filename)
 
-            if os.path.exists(filepath):
+            if not os.path.exists(filepath):
+                response = self._session.get(image_url, timeout=10)
+                response.raise_for_status()
+                with open(filepath, "wb") as f:
+                    f.write(response.content)
+                _LOGGER.info("Downloaded image to: %s", filepath)
+
+            if not grayscale:
                 return f"/local/gramps/{filename}"
 
-            response = self._session.get(image_url, timeout=10)
-            response.raise_for_status()
+            gray_name = f"{filename_hash}_gray.jpg"
+            gray_path = os.path.join(self.images_dir, gray_name)
+            if os.path.exists(gray_path):
+                return f"/local/gramps/{gray_name}"
 
-            with open(filepath, "wb") as f:
-                f.write(response.content)
+            try:
+                from PIL import Image  # bundled with Home Assistant
 
-            _LOGGER.info("Downloaded image to: %s", filepath)
-            return f"/local/gramps/{filename}"
+                with Image.open(filepath) as img:
+                    img.convert("L").save(gray_path, "JPEG", quality=85)
+                return f"/local/gramps/{gray_name}"
+            except Exception as gray_err:
+                _LOGGER.warning(
+                    "Could not create grayscale image, using color: %s", gray_err
+                )
+                return f"/local/gramps/{filename}"
 
         except Exception as err:
             _LOGGER.warning("Failed to download image: %s", err)
@@ -517,7 +540,9 @@ class GrampsWebAPI:
                     "family_handle": family_handle,
                 }
                 for idx, partner in enumerate(partners[:2], start=1):
-                    image = self._get_person_image_url(partner)
+                    deceased = partner.get("death_ref_index", -1) != -1
+                    item[f"person{idx}_deceased"] = deceased
+                    image = self._get_person_image_url(partner, grayscale=deceased)
                     if image:
                         item[f"image_url_person{idx}"] = image
                 result.append(item)

@@ -1,0 +1,6 @@
+# Offline test suite: pytest tests
+pytest>=8
+requests>=2.28.0
+pillow
+# Only needed for tests/test_ha_entities.py (skipped when it is missing)
+homeassistant

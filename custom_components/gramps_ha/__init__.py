@@ -64,7 +64,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device = device_registry.async_get_or_create(
             config_entry_id=entry.entry_id,
             identifiers={(DOMAIN, entry.entry_id)},
-            name=entry.title or "Gramps Web",
+            # Holds everything that is not a birthday/deathday/anniversary slot
+            # (calendar, "today" sensors, statistics, ...)
+            name="Sonstiges" if hass.config.language.startswith("de") else "Other",
             manufacturer="Gramps Web",
             model="Birthday Tracker",
             entry_type=DeviceEntryType.SERVICE,

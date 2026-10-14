@@ -1,8 +1,7 @@
 """The Gramps HA integration."""
 
 import logging
-from datetime import timedelta, datetime, date
-from pathlib import Path
+from datetime import timedelta, date
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -10,7 +9,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import (
     async_get as async_get_device_registry,
     DeviceEntryType,
-    DeviceInfo,
 )
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed

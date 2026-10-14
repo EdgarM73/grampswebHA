@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, date
+from datetime import datetime
 
 from homeassistant.components.sensor import (
     SensorEntity,

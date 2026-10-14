@@ -40,9 +40,12 @@ _LOGGER = logging.getLogger(__name__)
 
 def _via_device(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """Return the via_device_id kwarg linking to the main Gramps HA device."""
-    parent = async_get_device_registry(hass).async_get_device(
-        identifiers={(DOMAIN, entry.entry_id)}
-    )
+    registry = async_get_device_registry(hass)
+    identifier = (DOMAIN, entry.entry_id)
+    if hasattr(registry, "async_get_device_by_identifier"):
+        parent = registry.async_get_device_by_identifier(identifier, entry.entry_id)
+    else:  # older Home Assistant versions
+        parent = registry.async_get_device(identifiers={identifier})
     return {"via_device_id": parent.id} if parent else {}
 
 

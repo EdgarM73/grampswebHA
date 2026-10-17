@@ -45,6 +45,11 @@ def test_every_platform_file_exists():
         assert (PKG / f"{module}.py").exists(), module
 
 
+def test_brand_images_exist():
+    for image in ("icon.png", "logo.png", "dark_icon.png", "dark_logo.png"):
+        assert (PKG / "brand" / image).is_file(), image
+
+
 CREDENTIAL = re.compile(
     r"""(?i)(?<![A-Za-z_])(password|passwd|secret|api[_-]?key|token)["']?\s*[:=]\s*["'][^"'\s]{3,}["']"""
 )
